@@ -3,6 +3,8 @@
 # python 3.8
 # updated 2020-11-14 by Steven Bhardwaj
 
+# note: try using next_prime from gmpy2
+
 def bhrime(n):
     # github: bhrdj/bhack/bhrime.py
     # output list of prime numbers from 2 up to and including n
@@ -13,5 +15,5 @@ def bhrime(n):
         if b[i]:
             for j in range(2,n//i+1):
                 b[i*j] = False
-                print(i,j,b[i*j])
-    return b
+
+    return [k for k in range(n+1) if b[k]]
