@@ -1,4 +1,0 @@
-https://github.com/nytimes/covid-19-data/blob/master/README.md
-
-retrieved 2020-11-15 20:09 Taiwan Time
-https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv
