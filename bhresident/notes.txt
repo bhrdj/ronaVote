@@ -1,0 +1,6 @@
+
+https://github.com/favstats/USElection2020-NYT-Results/tree/master/data/2020-11-15%2000-42-15/presidential
+2020-11-15 00-42-15
+presidential.csv
+renamed to: presidential_2020-11-15_00-42-15.csv
+
