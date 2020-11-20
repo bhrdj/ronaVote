@@ -1,0 +1,83 @@
+pythonBuiltInsIKnow.txt
+
+https://docs.python.org/3.8/library/index.html
+
+WELL-TRAINED FUNCTIONS
+	str()		int()
+	abs()		round()	
+	any()		all()
+	min()		max()		sum()		len()
+	enumerate()	zip()		range()		map()		sorted()
+	dict()		list()		set()
+	print()
+	help()
+
+
+TRUTH VALUE TESTING
+None False 0 []									(constants defined "false")
+or and not										(boolean operations)
+< <= > >= == != is  in  is not  not in			(comparisons)
+
+NUMERIC TYPES
+int float complex								(numeric types)
++ - * / // % **									(numeric operations)
+
+
+		
+		
+
+FAMILIAR FUNCTIONS
+	bool()
+	bin()
+	hex()	
+	oct()
+	float()
+	tuple()
+	chr()
+	complex()
+	ascii()
+	type()		
+	pow()	
+	divmod()
+	format()	
+	next()
+	input()
+
+UNFAMILIAR FUNCTIONS
+	eval()
+	exec()
+	slice()
+	repr()
+
+UNRECOGNIZABLE FUNCTIONS
+	delattr()
+	hash()
+	memoryview()
+	setattr()
+	dir()
+	id()
+	object()
+	staticmethod()
+	open()
+	breakpoint()
+	isinstance()
+	ord()
+	bytearray()
+	filter()
+	issubclass()
+	super()
+	bytes()
+	iter()
+	callable()
+	property()
+	frozenset()
+	vars()
+	classmethod()
+	getattr()
+	locals()
+	compile()
+	globals()
+	reversed()
+	__import__()
+	hasattr()
+	
