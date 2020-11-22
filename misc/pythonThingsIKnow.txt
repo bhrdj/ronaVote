@@ -14,7 +14,7 @@ WELL-TRAINED FUNCTIONS
 
 
 TRUTH VALUE TESTING
-None False 0 []									(constants defined "false")
+None True False 0 []							(constants defined "false")
 or and not										(boolean operations)
 < <= > >= == != is  in  is not  not in			(comparisons)
 
@@ -23,8 +23,10 @@ int float complex								(numeric types)
 + - * / // % **									(numeric operations)
 
 
-		
-		
+
+
+
+
 
 FAMILIAR FUNCTIONS
 	bool()
