@@ -1,4 +1,5 @@
 pythonBuiltInsIKnow.txt
+''' Common Constants and Operations '''
 
 https://docs.python.org/3.8/library/index.html
 
@@ -13,14 +14,16 @@ WELL-TRAINED FUNCTIONS
 	help()
 
 
-TRUTH VALUE TESTING
-None True False 0 []							(constants defined "false")
-or and not										(boolean operations)
-< <= > >= == != is  in  is not  not in			(comparisons)
+TRUTH VALUE TESTING: 						
+None True False 0 []						(constants defined "false")
+or and not									(boolean operations)
+< <= > >= == != is  in  is not  not in		(comparisons)
 
 NUMERIC TYPES
-int float complex								(numeric types)
-+ - * / // % **									(numeric operations)
+int float complex							(numeric types)
++ - * / // % **								(numeric operations)
+
+
 
 
 

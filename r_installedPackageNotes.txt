@@ -1,0 +1,5 @@
+r_installedPackageNotes.txt
+
+installed package "docstring"
+https://github.com/Dasonk/docstring
+https://stackoverflow.com/questions/5931292/is-there-a-sensible-way-to-do-something-like-docstrings-in-r
