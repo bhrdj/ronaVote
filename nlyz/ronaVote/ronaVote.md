@@ -12,7 +12,7 @@
 
 ## Results
 
-<img src="~/Downloads/">
+<img src="~/git/bhack/ronaVote/Reports/MapOfCountyVoteMargins.png">
 
 - Have Trump-leaning counties been getting sicker than Biden-leaning counties? How much sicker?
 	- The latest regression coefficient of 10 on the chart implies the following magnitude of correlation:
