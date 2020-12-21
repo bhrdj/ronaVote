@@ -22,7 +22,7 @@ getData <- function(){
                 names(fread(pathArea, nrow = 0L))))
   popu <- data.table::fread(pathPop, select = grep("fips|state|area_name|pop2019",
                 names(fread(pathPop, nrow = 0L))))
-  vote <- data.table::fread(pathVote, select = grep("fips|margin2020",
+  vote <- data.table::fread(pathVote, select = grep("fips|margin2020|votes",
                 names(fread(pathVote, nrow = 0L))))
   return(list(ronaDays=ronaDays, area=area, popu=popu, vote=vote))
 }
