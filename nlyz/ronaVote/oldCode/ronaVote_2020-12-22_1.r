@@ -13,16 +13,16 @@ setwd("~/git/bhack/nlyz/ronaVote/wrkdir")
 getData <- function(){
   pathRona <- "~/git/bhack/data/rona/NYT/us-counties.csv"
   pathArea <- "~/git/bhack/data/rona/CountiesLandArea/LND01.csv"
-  pathPop <- "~/git/bhack/data/rona/USDA_PopulationData/PopEst2019.csv"
+  pathPop <-  "~/git/bhack/data/rona/USDA_PopulationData/PopEst2019.csv"
   pathVote <- "~/git/bhack/data/vote/NYT/presidential.csv"
   
-  ronaDays <- fread(pathRona, select = grep("date|fips|cases", 
+  ronaDays <- fread(pathRona, select = grep(        "fips|date|cases", 
                 names(fread(pathRona, nrow = 0L))))
-  area <- fread(pathArea, select = grep("fips|mi2",
+  area <- fread(pathArea, select = grep(            "fips|mi2",
                 names(fread(pathArea, nrow = 0L))))
-  popu <- fread(pathPop, select = grep("fips|state|area_name|pop2019",
+  popu <- fread(pathPop, select = grep(             "fips|state|area_name|pop2019",
                 names(fread(pathPop, nrow = 0L))))
-  vote <- fread(pathVote, select = grep("fips|margin2020|votes$",
+  vote <- fread(pathVote, select = grep(            "fips|margin2020|votes$",
                 names(fread(pathVote, nrow = 0L))))
   return(list(ronaDays=ronaDays, area=area, popu=popu, vote=vote))
 }
@@ -35,29 +35,28 @@ rm(rawData)
 
 # DAYS TO WEEKS ----------------------------------------------------------------
 days2Weeks <- function(ronaDays) {
-  zeroMonday <- as.IDate("2019-12-29")
-  ronaDays$weekNum <- as.numeric(ronaDays$date - zeroMonday) %/% 7
-  ronaWeeks <- ronaDays[!duplicated(ronaDays[,c('fips','weekNum')]),]
-  ronaWeeks$weekDate <- as.Date(ronaWeeks$weekNum * 7, origin="2019-12-29")
-  ronaWeeks$week_Date <- paste("w", gsub("-", "_", ronaWeeks$weekDate), sep="")
+  zeroMonday <- as.IDate("2019-12-29")                                          # Base date for counting weeks
+  ronaDays$weekNum <- as.numeric(ronaDays$date - zeroMonday) %/% 7              # Number the weeks from zeroMonday
+  ronaWeeks <- ronaDays[!duplicated(ronaDays[,c('fips','weekNum')]),]           # Remove extra rows after first row/week/county
+  ronaWeeks$weekDate <- as.Date(ronaWeeks$weekNum * 7, origin="2019-12-29")     # Reconstruct uniform dates for all rows in each week
+  ronaWeeks$week_Date <- paste("w", gsub("-", "_", ronaWeeks$weekDate), sep="") # Reconfigure weekDate without "-" for column names
   return(ronaWeeks)
 } 
 ronaWeeks <- days2Weeks(ronaDays)
 rm(ronaDays)
-weekDates <- distinct(select(ronaWeeks, weekDate, week_Date))
+weekDates <- distinct(select(ronaWeeks, weekDate, week_Date))                   # Put aside weekDates in advance of spread()
 
 
 # TIDY IT ----------------------------------------------------------------------
 # ronaTall <- ronaWeeks
 tidyIt <- function(ronaTall, area, popu, vote) {
-  ronaTall <- merge(ronaTall, popu, by="fips") #pop2019, area_name, state
-  ronaTall$casesByPop <- (ronaTall$cases / ronaTall$pop2019) * 100000
-  ronaWide <- pivot_wider(data = ronaTall, id_cols = fips, names_from = week_Date, values_from = casesByPop)
-  ronaWeek_Dates = rownames_to_column(ronaWide, "row_name")
-
-  ronaWide <- merge(ronaWide, popu, by="fips")
-  ronaWide <- merge(ronaWide, vote, by="fips")
-  ronaWide <- merge(ronaWide, area, by="fips") #mi2
+  ronaTall <- merge(ronaTall, popu, by="fips")    #pop2019, area_name, state
+  ronaTall$casesByPop <- (ronaTall$cases / ronaTall$pop2019) * 100000           # Calculate cases / 100,000 population
+  ronaWide <- pivot_wider(data = ronaTall, id_cols = fips, 
+                          names_from = week_Date, values_from = casesByPop)     # Only 1 row per county; 1 column for each week
+  ronaWide <- merge(ronaWide, popu, by="fips")    # margin2020, votes           # Merge variables into the tidy data frame
+  ronaWide <- merge(ronaWide, vote, by="fips")    # state, area_name, pop2019
+  ronaWide <- merge(ronaWide, area, by="fips")    # mi2
   return(ronaWide)
 }
 rona <- tidyIt(ronaWeeks, area, popu, vote)
@@ -65,12 +64,12 @@ rm(ronaWeeks, area, popu, vote)
 
 # CONSTRUCT CALCULATED VARIABLES -----------------------------------------------
 constructVars <- function(rona) {
-  rona$mi2[rona$mi2 == 0.0] <- NA                           #area in 
-  rona$popMi2 <- (rona$pop2019 / rona$mi2)
+  rona$mi2[rona$mi2 == 0.0] <- NA                           # area in sq. mi.   # ?? WHAT ARE THE ZERO-AREA COUNTIES ??
+  rona$popMi2 <- (rona$pop2019 / rona$mi2)                  # pop / sq. mi/     # Calculate population density of counties
   
-  stateDummies <- fastDummies::dummy_cols(rona$state)
-  stateDummies$fips <- rona$fips
-  rona <- merge(rona, stateDummies, by="fips")
+  stateDummies <- fastDummies::dummy_cols(rona$state)                           # make the dummy variables for state fixed effects
+  stateDummies$fips <- rona$fips                                                # give dummy variable data frame fips id's by county
+  rona <- merge(rona, stateDummies, by="fips")                                  # merge state dummies into the rona data frame
   return(rona)
 }
 rona <- constructVars(rona)
@@ -83,6 +82,7 @@ lm_all <- map(yvars,
             }
 )
 
+# GET REGRESSION OUTPUT --------------------------------------------------------
 lm_out <- map(lm_all,
               function(an_lm) {
                 c( tidy(an_lm)$estimate[2],
@@ -139,8 +139,4 @@ lm_df2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovid)) + geom_point()
 #     ? Counties that surpassed a per-cap floor before a threshold date and missed the next ceiling?
 #     ? Counties that surpassed floor by a date, and then decreased below a ceiling by a date?
 #     ? Counties that never reached the floor by a date?
-
-
-
-
 
