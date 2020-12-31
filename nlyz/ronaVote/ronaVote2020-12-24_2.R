@@ -2,12 +2,9 @@
 # Regressing panel data on COVID outcomes on 2020 election data
 
 library(data.table)
-library(dplyr)
-library(tibble)
-library(tidyr)
-library(purrr)
 library(broom)
-library(ggplot2)
+library(tidyverse)
+
 setwd("~/git/bhack/nlyz/ronaVote/wrkdir")
 
 # GET DATA ---------------------------------------------------------------------
@@ -21,11 +18,11 @@ getData <- function(){
                     names(fread(pathRona, nrow = 0L))))
   ronaDays <- rename(ronaDays, casesTot = cases)                                  # renamed "cases" to "casesTot"
   area <- fread(pathArea, select = grep(            "fips|mi2",
-                    names(fread(pathArea, nrow = 0L))))
+                names(fread(pathArea, nrow = 0L))))
   popu <- fread(pathPop, select = grep(             "fips|state|area_name|pop2019",
-                    names(fread(pathPop, nrow = 0L))))
+                names(fread(pathPop, nrow = 0L))))
   vote <- fread(pathVote, select = grep(            "fips|margin2020|votes$",
-                    names(fread(pathVote, nrow = 0L))))
+                names(fread(pathVote, nrow = 0L))))
   return(list(ronaDays=ronaDays, area=area, popu=popu, vote=vote))
 }
 rawData <- getData()
@@ -49,54 +46,74 @@ ronaTall <- ronaDays                                                        %>%
 mutate(weekNum = (as.numeric(date) - as.numeric(zeroMondayInt)) %/% 7)      %>% # Number the weeks from zeroMonday
   distinct(fips, weekNum, .keep_all = TRUE)                                 %>% # Remove extra rows after first row/week/county
   mutate(weekDate = as.IDate(weekNum * 7, origin=zeroMonday))               %>% # Reconstruct uniform dates for all rows in each week
-  mutate(week_DateTot = paste("t", gsub("-", "_", weekDate), sep=""))         %>% # weekDate without "-", with "t" for total cases
-  mutate(week_DateW = paste("w", gsub("-", "_", weekDate), sep=""))             # weekDate without "-", with "w" for a week of cases
+  mutate(week_DateTot = paste("t", gsub("-", "_", weekDate), sep=""))       %>% # weekDate without "-", with "t" for total cases
+  mutate(week_DateW = paste("w", gsub("-", "_", weekDate), sep=""))         %>% # weekDate without "-", with "w" for a week of cases
+  mutate()                                         # pad fips with zeroes
 rm(ronaDays)
 #weekDates <- distinct(select(ronaTall, weekDate, week_DateTot, week_DateW))      # Put aside weekDates in advance of spread()
 
-# WIDEN FOR COLUMNS OF TIMES ---------------------------------------------------
+# WIDEN FOR COLUMNS OF TIMES, AND REPLACE NA'S SUBSEQUENT TO FIRST CASE --------
 ronaWideTot <- ronaTall                                                     %>%
-  left_join(popu, by="fips")                                                %>% # pop2019, area_name, state
-  mutate(casesByPopTot = (casesTot / pop2019) * 100000)                     %>% # Calculate total cases / 100,000 population
   pivot_wider(id_cols = fips, names_from = week_DateTot, 
-              values_from = casesByPopTot)                                  %>%    # Only 1 row/county; 1 col/week. Total cases at each week
+              values_from = casesTot)                                       %>%    # Only 1 row/county; 1 col/week. Total cases at each week
   left_join(popu, by="fips")                                                %>%
   left_join(area, by="fips")                                                %>%
   left_join(vote, by="fips")                                                %>%
-  mutate(fips2 = paste("x", fips, sep = ""))                                          %>% # in case I want to save the fips
-  mutate(fips3 = paste("x", fips, sep = ""))                                          %>%
+  mutate(fips2 = paste("x", fips, sep = ""))                                %>% # in case I want to save the fips
+  mutate(fips3 = paste("x", fips, sep = ""))                                %>%
   column_to_rownames(var="fips3")
+  # CHECK TO INCLUDE: REPLACE NA'S SUBSEQUENT TO FIRST CASE
+  # CHECK FOR: NEGATIVE DIFFERENCES FROM WEEK TO WEEK
+  # https://stackoverflow.com/questions/7735647/replacing-nas-with-latest-non-na-value
 
 rm(area, popu, vote, ronaTall)
 
-# TRANSPOSE DIFF, TRANSPOSE BACK, JOIN ------------------------ ----------------
+# TRANSPOSE, DIFF, TRANSPOSE BACK, JOIN ------------------------ ----------------
 # TRANSPOSE
-ronaWideWk <- ronaWideTot %>%
+diff_df <- function(df, exceptCol = "name", newPrefix = "D") {
+  df %>%
+  select(-{{exceptCol}}) %>%
+    mutate(. - lag(.)) %>%
+    rename_with(function(x) paste0({{newPrefix}}, x)) %>%
+    return(.)
+}
+
+ronaWideWk_t <- ronaWideTot %>%
   select(fips2, starts_with("t")) %>%
   pivot_longer(-fips2) %>% 
-  pivot_wider(names_from=fips2, values_from=value) 
-ronaWideWk[is.na(ronaWideWk)] <- 0
-# DIFF
-diff_with_a_0 <- function(c) {
-  c %>%
-    diff(.) %>% 
-    cbind(.) %>% 
-    rbind(0,.)
-}
+  pivot_wider(names_from=fips2, values_from=value) %>%
+  { crossing(.$name, diff_df(.)) }
 
-diff_with_a_0(ronaWideWk[2])
+ronaWideTot_t <- ronaWideTot %>%
+  select(fips2, starts_with("t")) %>%
+  pivot_longer(-fips2) %>% 
+  pivot_wider(names_from=fips2, values_from=value)
 
 
-                                                            # i think it's working to here 
-select(ronaWideWk, starts_with("x")) %>%
-  select(ronaWideWk, starts_with("x")) %>%
-  map_df(ronaWideWk, diff_with_a_0)                         # why isn't this working
+  
+ronaWideWk_t["Dx6023"]
+ronaWideTot_t["x6023"]
 
 
+# mimic the function
+exceptCol = "name"
+newPrefix = "D"
+ronaWideWk2 <- ronaWideWk %>%
+  select(-{{exceptCol}}) %>%
+  mutate(. - lag(.)) %>%
+  rename_with(function(x) paste0({{newPrefix}}, x))
+ronaWideWk2
 
-for(c in select(ronaWideWk, starts_with("x"))) {            # trying this to debug...
-  diff_with_a_0(c)
-}
+x <- left_join(name = ronaWideWk$name, ronaWideWk2)
+
+# crossing() instead of join when no key column
 
 
+df <- tibble(x = c(NA, 1,3,4,5,7))
+df2 = df - lag(df)
+replace_na(df2, list(x = 0))
 
+
+# left_join(popu, by="fips")                                                %>% # pop2019, area_name, state
+# mutate(casesByPopTot = (casesTot / pop2019) * 100000)                     %>% # Calculate total cases / 100,000 population
+  

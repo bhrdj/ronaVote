@@ -54,18 +54,18 @@ mutate(weekNum = (as.numeric(date) - as.numeric(zeroMondayInt)) %/% 7)      %>% 
 rm(ronaDays)
 #weekDates <- distinct(select(ronaTall, weekDate, week_DateTot, week_DateW))      # Put aside weekDates in advance of spread()
 
-# WIDEN FOR COLUMNS OF TIMES ---------------------------------------------------
+# WIDEN FOR COLUMNS OF TIMES, AND REPLACE NA'S SUBSEQUENT TO FIRST CASE --------
 ronaWideTot <- ronaTall                                                     %>%
-  left_join(popu, by="fips")                                                %>% # pop2019, area_name, state
-  mutate(casesByPopTot = (casesTot / pop2019) * 100000)                     %>% # Calculate total cases / 100,000 population
   pivot_wider(id_cols = fips, names_from = week_DateTot, 
               values_from = casesByPopTot)                                  %>%    # Only 1 row/county; 1 col/week. Total cases at each week
   left_join(popu, by="fips")                                                %>%
   left_join(area, by="fips")                                                %>%
   left_join(vote, by="fips")                                                %>%
-  mutate(fips2 = paste("x", fips, sep = ""))                                          %>% # in case I want to save the fips
-  mutate(fips3 = paste("x", fips, sep = ""))                                          %>%
+  mutate(fips2 = paste("x", fips, sep = ""))                                %>% # in case I want to save the fips
+  mutate(fips3 = paste("x", fips, sep = ""))                                %>%
   column_to_rownames(var="fips3")
+  # CHECK TO INCLUDE: REPLACE NA'S SUBSEQUENT TO FIRST CASE
+  # https://stackoverflow.com/questions/7735647/replacing-nas-with-latest-non-na-value
 
 rm(area, popu, vote, ronaTall)
 
@@ -75,28 +75,18 @@ ronaWideWk <- ronaWideTot %>%
   select(fips2, starts_with("t")) %>%
   pivot_longer(-fips2) %>% 
   pivot_wider(names_from=fips2, values_from=value) 
-ronaWideWk[is.na(ronaWideWk)] <- 0
-# DIFF
-diff_with_a_0 <- function(c) {
-  c %>%
-    diff(.) %>% 
-    cbind(.) %>% 
-    rbind(0,.)
-}
 
-diff_with_a_0(ronaWideWk[2])
-
-
-                                                            # i think it's working to here 
-select(ronaWideWk, starts_with("x")) %>%
-  select(ronaWideWk, starts_with("x")) %>%
-  map_df(ronaWideWk, diff_with_a_0)                         # why isn't this working
+ronaWideWk2 <- ronaWideWk %>%
+  select(-name) %>%
+  mutate(. - lag(.))
 
 
 
-for(c in select(ronaWideWk, starts_with("x"))) {            # trying this to debug...
-  diff_with_a_0(c)
-}
+df <- tibble(x = c(NA, 1,3,4,5,7))
+df2 = df - lag(df)
+replace_na(df2, list(x = 0))
 
 
-
+# left_join(popu, by="fips")                                                %>% # pop2019, area_name, state
+# mutate(casesByPopTot = (casesTot / pop2019) * 100000)                     %>% # Calculate total cases / 100,000 population
+  
