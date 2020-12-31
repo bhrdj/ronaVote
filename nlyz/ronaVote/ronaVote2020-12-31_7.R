@@ -135,13 +135,15 @@ lm_dfW2 <- left_join(lm_dfW2, weekDates, by = "week_DateW")
 
 
 rona %>% ggplot(aes(x=margin2020, y=T2020_08_16)) + scale_y_log10() + geom_point()
-rona %>% ggplot(aes(x=margin2020, y=T2020_12_06)) + scale_y_log10() + geom_point()
+rona %>% ggplot(aes(x=margin2020, y=T2020_12_27)) + scale_y_log10() + geom_point()
 rona %>% ggplot(aes(x=margin2020, y=W2020_08_16)) + scale_y_log10() + geom_point()
-rona %>% ggplot(aes(x=margin2020, y=W2020_12_06)) + scale_y_log10() + geom_point()
+rona %>% ggplot(aes(x=margin2020, y=W2020_12_27)) + scale_y_log10() + geom_point()
 lm_dfT2 <- filter(lm_dfT2, weekDate > as.Date("2020-04-12"))
 lm_dfT2 %>% ggplot(aes(x=weekDate, y=RSquared)) + geom_point()
 lm_dfT2 %>% ggplot(aes(x=weekDate, y=PValue)) + geom_point()
 lm_dfT2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovid)) + geom_point()
+lm_dfW2 %>% ggplot(aes(x=weekDate, y=RSquared)) + geom_point()
+lm_dfW2 %>% ggplot(aes(x=weekDate, y=PValue)) + geom_point()
 lm_dfW2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovid)) + geom_point()
 
 
