@@ -101,10 +101,13 @@ ronaQuartiles <- rona %>%
   ungroup %>%
   print
 
-rona2 %>% ggplot(aes(x = margin2020, y = ..density.., weight = pop2019)) + geom_histogram() #+ 
-  geom_vline(xintercept=tP*.25, color="red", linetype="dashed", size=1) + 
-  geom_vline(xintercept=tP*.5, color="red", linetype="dashed", size=1) + 
-  geom_vline(xintercept=tP*.75, color="red", linetype="dashed", size=1)
+rona2 %>% ggplot(aes(x = margin2020, y = ..density.., weight = pop2019)) + geom_histogram() + 
+  geom_vline(xintercept={{ronaQuartiles$margin2020[2]}}, size=.3) +
+  geom_vline(xintercept={{ronaQuartiles$margin2020[3]}}, size=.3) + 
+  geom_vline(xintercept={{ronaQuartiles$margin2020[4]}}, size=.3)
+
+
+
 # y = ..density.., weight = pop2019
 
  #%>%   # number quartiles
