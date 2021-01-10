@@ -95,6 +95,11 @@ rona <- ronaAllSections %>%
   mutate(cP = cumsum(pop2019)) %>%                         # new column = cumulative Sum of Population in order of vote margin
   mutate(margin_qtile = ifelse(cP>tP*.75,4, ifelse(cP>tP*.5,3, ifelse(cP>tP*.25,2, 1)))) # label counties by their vote margin quartile (pop-weighted)
 
+# ===============================================================================================
+# CURRENT FRONTIER
+# ===============================================================================================
+
+
 ronaQuartiles <- rona %>%
   group_by(margin_qtile) %>%
   slice(1) %>%
@@ -151,9 +156,6 @@ lm_outW <- map(lm_allW,
                  })
 
 
-# ===============================================================================================
-# CURRENT FRONTIER
-# ===============================================================================================
 
 
 # PROCESS REGRESSION OUTPUT ----------------------------------------------------
@@ -168,7 +170,7 @@ lm_dfW2 = rownames_to_column(lm_dfW, var = "week_DateW")
 lm_dfW2 <- left_join(lm_dfW2, weekDates, by = "week_DateW")
 
 lm_dfT2 <- filter(lm_dfT2, weekDate > as.Date("2020-04-12"))
-lm_dfW2 <- filter(lm_dfT2, weekDate > as.Date("2020-04-12"))
+lm_dfW2 <- filter(lm_dfW2, weekDate > as.Date("2020-04-12"))
 
 rona %>% ggplot(aes(x=margin2020, y=T2020_08_16)) + scale_y_log10() + geom_point()
 rona %>% ggplot(aes(x=margin2020, y=T2020_12_27)) + scale_y_log10() + geom_point()
