@@ -10,7 +10,7 @@ setwd("~/git/ronaVote")
 # GET DATA, REMOVE ROWS W/ UNKNOWN FIPS, CONVERT>WEEKLY OBSERVATIONS --------  later: pad fips with zeroes 
 # GET DATA
 getData <- function(){
-  pathRona <- "~/git/ronaVote/data/rona/NYT/us-counties.csv"
+  pathRona <- "~/git/ronaVote/data/rona/NYT/us-counties_2021-01-10.csv"
   pathArea <- "~/git/ronaVote/data/rona/CountiesLandArea/LND01.csv"
   pathPop <-  "~/git/ronaVote/data/rona/USDA_PopulationData/PopEst2019.csv"
   pathVote <- "~/git/ronaVote/data/vote/NYT/presidential.csv"
@@ -101,11 +101,14 @@ ronaQuartiles <- rona %>%
   ungroup %>%
   print
 
-rona2 %>% ggplot(aes(x = margin2020, y = ..density.., weight = pop2019)) + geom_histogram() + 
+rona2 %>% 
+  ggplot(aes(x = margin2020, y = ..density.., weight = pop2019)) + geom_histogram() + 
   geom_vline(xintercept={{ronaQuartiles$margin2020[2]}}, size=.3) +
   geom_vline(xintercept={{ronaQuartiles$margin2020[3]}}, size=.3) + 
   geom_vline(xintercept={{ronaQuartiles$margin2020[4]}}, size=.3)
 
+rona %>%
+  filter()
 
 
 # y = ..density.., weight = pop2019
