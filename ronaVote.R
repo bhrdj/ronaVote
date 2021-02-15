@@ -10,7 +10,7 @@ setwd("~/git/ronaVote")
 # GET DATA, REMOVE ROWS W/ UNKNOWN FIPS, CONVERT>WEEKLY OBSERVATIONS --------  later: pad fips with zeroes 
 # GET DATA
 getData <- function(){
-  pathRona <- "~/git/ronaVote/data/rona/NYT/us-counties_2021-01-10.csv"
+  pathRona <- "~/git/ronaVote/data/rona/NYT/us-counties_2021-02-15.csv"
   pathArea <- "~/git/ronaVote/data/rona/CountiesLandArea/LND01.csv"
   pathPop <-  "~/git/ronaVote/data/rona/USDA_PopulationData/PopEst2019.csv"
   pathVote <- "~/git/ronaVote/data/vote/NYT/presidential.csv"
