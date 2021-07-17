@@ -1,5 +1,0 @@
-# need to REVIEW and EXPAND pythonThingsIKnow.txt
-
-# need to RELEARN and IMPROVE my regular expressions
-
-format()
