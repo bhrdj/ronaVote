@@ -10,23 +10,20 @@ setwd("~/git/ronaVote")
 # GET DATA, REMOVE ROWS W/ UNKNOWN FIPS, CONVERT>WEEKLY OBSERVATIONS --------  later: pad fips with zeroes 
 # GET DATA
 getData <- function(){
+  pathRona <- "~/git/ronaVote/data/rona/NYT/us-counties_2021-02-15.csv"
   pathArea <- "~/git/ronaVote/data/rona/CountiesLandArea/LND01.csv"
-  pathRona <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties-recent.csv"
-  pathVote <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/vote/Harvard/countypres_2000-2020.csv"
-  pathPop <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/countyData/USDA_PopulationData/PopEst2019.csv"
+  pathPop <-  "~/git/ronaVote/data/rona/USDA_PopulationData/PopEst2019.csv"
+  pathVote <- "~/git/ronaVote/data/vote/NYT/presidential.csv"
   
-  ronaDays <- fread(pathRona, select = grep(  "fips|date|cases", 
-                                              names(fread(pathRona, nrow = 0L)))) %>%
-    rename(casesTot = cases)    
-  popu <- fread(pathPop, select = grep(       "fips|state|area_name|pop2019",
-                                              names(fread(pathPop, nrow = 0L))))
-  vote <- fread(pathVote, select = grep(      "county_fips|candidatevotes|totalvotes$",
-                                              names(fread(pathVote, nrow = 0L)))) %>%
-                                              rename(fips = county_fips)
-  
-  area <- fread(pathArea, select = grep(      "fips|mi2",
+  ronaDays <- fread(pathRona, select = grep(        "fips|date|cases", 
+                    names(fread(pathRona, nrow = 0L))))
+  ronaDays <- rename(ronaDays, casesTot = cases)    # renamed "cases" to "casesTot"
+  area <- fread(pathArea, select = grep(            "fips|mi2",
                 names(fread(pathArea, nrow = 0L))))
-
+  popu <- fread(pathPop, select = grep(             "fips|state|area_name|pop2019",
+                names(fread(pathPop, nrow = 0L))))
+  vote <- fread(pathVote, select = grep(            "fips|margin2020|votes$",
+                names(fread(pathVote, nrow = 0L))))
   return(list(ronaDays=ronaDays, area=area, popu=popu, vote=vote))
 }
 rawData <- getData()
@@ -97,6 +94,36 @@ rona <- ronaAllSections %>%
   arrange(margin2020) %>%                                  # put counties in order of vote margin
   mutate(cP = cumsum(pop2019)) %>%                         # new column = cumulative Sum of Population in order of vote margin
   mutate(margin_qtile = ifelse(cP>tP*.75,4, ifelse(cP>tP*.5,3, ifelse(cP>tP*.25,2, 1)))) # label counties by their vote margin quartile (pop-weighted)
+
+# ===============================================================================================
+# CURRENT FRONTIER
+# ===============================================================================================
+
+
+ronaQuartiles <- rona %>%
+  group_by(margin_qtile) %>%
+  slice(1) %>%
+  ungroup %>%
+  print
+
+rona2 %>% 
+  ggplot(aes(x = margin2020, y = ..density.., weight = pop2019)) + geom_histogram() + 
+  geom_vline(xintercept={{ronaQuartiles$margin2020[2]}}, size=.3) +
+  geom_vline(xintercept={{ronaQuartiles$margin2020[3]}}, size=.3) + 
+  geom_vline(xintercept={{ronaQuartiles$margin2020[4]}}, size=.3)
+
+rona %>%
+  filter()
+
+
+# y = ..density.., weight = pop2019
+
+ #%>%   # number quartiles
+  # number population-weighted quartiles
+
+
+
+
 
 
 
