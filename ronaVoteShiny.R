@@ -19,7 +19,7 @@ library(data.table)
 library(broom)
 library(tidyverse)
 
-pathRona <- "/home/bhrdwj/git/ronaVote/data/rona/NYT/us-counties_panel_2021-07-17.csv"
+pathRona <- "/home/bhrdwj/git/ronaVote/data/rona/NYT/us-counties_panel_2021-08-02.csv"
 pathVote <- "/home/bhrdwj/git/ronaVote/data/vote/Harvard/countypres_2000-2020.csv"
 pathPop <- "/home/bhrdwj/git/ronaVote/data/countyData/USDA_PopulationData/PopEst2019.csv"
 
@@ -175,7 +175,7 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            sliderInput("Week",
+            sliderInput("weekDate",
                         "Date:",
                         min = as.Date(weekDates$weekDate[1], "%Y-%m-%d"),
                         max = as.Date(weekDates$weekDate %>% .[length(.)], "%Y-%m-%d"),
@@ -185,22 +185,16 @@ ui <- fluidPage(
 
         # Show a plot of the generated distribution
         mainPanel(
-           plotOutput("distPlot1") ,
-           plotOutput("distPlot2")
+           plotOutput("distPlot1")
         )
     )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-
     output$distPlot1 <- renderPlot({
-        # ggplot(cars, aes(x=speed, y=dist)) + geom_point()
-        lm_dfT2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovidTotal)) + geom_point()  # Total Cases
-        })
-    
-    output$distPlot2 <- renderPlot({
-        lm_dfW2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovidWeekly)) + geom_point()  # Weekly New Cases
+        lm_dfT2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovidTotal)) + geom_point() +
+            geom_point(aes(x = input$weekDate, y = filter(lm_dfT2, weekDate == input$weekDate)$TrumpCountiesMoreCovidTotal), color='red') # Weekly New Cases
         })
 
     
