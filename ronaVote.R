@@ -101,12 +101,13 @@ rona <- ronaAllSections %>%
 
 
 # REGRESS ----------------------------------------------------------------------
-
+# Cumulative Total Cases
 lm_allT <- map(select(rona, starts_with("T")),
                function(yvar) {
                  return( lm(yvar ~ margin2020, rona) )
                })
 
+# Weekly New Cases
 l <- length(rona)
 lm_allW <- map(select(rona[2:l], starts_with("W")),
                function(yvar) {
@@ -114,13 +115,15 @@ lm_allW <- map(select(rona[2:l], starts_with("W")),
                })
 
 # GET REGRESSION OUTPUT --------------------------------------------------------
-lm_outT <- map(lm_allT, 
+# Cumulative Total Cases
+lm_outT <- map(lm_allT,
                function(an_lm) {
                  c( tidy(an_lm)$estimate[2], 
                     glance(an_lm)$r.squared,
                     glance(an_lm)$p.value )
                  })
 
+# Weekly New Cases
 lm_outW <- map(lm_allW,
                function(an_lm) {
                  c( tidy(an_lm)$estimate[2],
@@ -132,7 +135,7 @@ lm_outW <- map(lm_allW,
 
 
 # PROCESS REGRESSION OUTPUT ----------------------------------------------------
-lm_dfT = as.data.frame(do.call(rbind, lm_outT))                                 # Data frame of Total Cases 
+lm_dfT = as.data.frame(do.call(rbind, lm_outT))          # Data frame of Total Cases 
 colnames(lm_dfT) <- c("TrumpCountiesMoreCovid", "RSquared", "PValue")
 lm_dfT2 = rownames_to_column(lm_dfT, var = "week_DateT")                        
 lm_dfT2 <- left_join(lm_dfT2, weekDates, by = "week_DateT")
@@ -145,15 +148,9 @@ lm_dfW2 <- left_join(lm_dfW2, weekDates, by = "week_DateW")
 lm_dfT2 <- filter(lm_dfT2, weekDate > as.Date("2020-04-12"))
 lm_dfW2 <- filter(lm_dfW2, weekDate > as.Date("2020-04-12"))
 
-rona %>% ggplot(aes(x=margin2020, y=T2020_08_16)) + scale_y_log10() + geom_point()
 rona %>% ggplot(aes(x=margin2020, y=T2020_12_27)) + scale_y_log10() + geom_point()
-rona %>% ggplot(aes(x=margin2020, y=W2020_08_16)) + scale_y_log10() + geom_point()
 rona %>% ggplot(aes(x=margin2020, y=W2020_12_27)) + scale_y_log10() + geom_point()
-lm_dfT2 %>% ggplot(aes(x=weekDate, y=RSquared)) + geom_point()
-lm_dfT2 %>% ggplot(aes(x=weekDate, y=PValue)) + geom_point()
 lm_dfT2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovid)) + geom_point()
-lm_dfW2 %>% ggplot(aes(x=weekDate, y=RSquared)) + geom_point()
-lm_dfW2 %>% ggplot(aes(x=weekDate, y=PValue)) + geom_point()
 lm_dfW2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovid)) + geom_point()
 
 
@@ -164,18 +161,18 @@ lm_dfW2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovid)) + geom_point()
 
 
 
-xy <- data.frame(v1 = c(NA,2,3), v2 = c(11,12,13)) %>%
-  mutate(rn = c("r1", "r2", "r3")) %>%
-  column_to_rownames(var = "rn") %>%
-  mutate(across(everything(), function(x) {x+1})) %>%   # replace_na(0)
-  print()
-
-
-
-na.locf <- function(x) {                                                        # Last observation carried forward
-  v <- !is.na(x)
-  c(NA, x[v])[cumsum(v)+1]
-}
+# xy <- data.frame(v1 = c(NA,2,3), v2 = c(11,12,13)) %>%
+#   mutate(rn = c("r1", "r2", "r3")) %>%
+#   column_to_rownames(var = "rn") %>%
+#   mutate(across(everything(), function(x) {x+1})) %>%   # replace_na(0)
+#   print()
+# 
+# 
+# 
+# na.locf <- function(x) {                                                        # Last observation carried forward
+#   v <- !is.na(x)
+#   c(NA, x[v])[cumsum(v)+1]
+# }
 
   
 # ===============================================================================================
@@ -183,9 +180,9 @@ na.locf <- function(x) {                                                        
 # ===============================================================================================
 
 # Make state dummies
-stateDummies <- fastDummies::dummy_cols(rona$state)                           # make the dummy variables for state fixed effects
-stateDummies$fips <- rona$fips                                                # give dummy variable data frame fips id's by county
-rona <- merge(rona, stateDummies, by="fips")                                  # merge state dummies into the rona data frame
+# stateDummies <- fastDummies::dummy_cols(rona$state)                           # make the dummy variables for state fixed effects
+# stateDummies$fips <- rona$fips                                                # give dummy variable data frame fips id's by county
+# rona <- merge(rona, stateDummies, by="fips")                                  # merge state dummies into the rona data frame
 
 
 
