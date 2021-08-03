@@ -168,13 +168,21 @@ lm_dfW2 <- filter(lm_dfW2, weekDate > as.Date("2020-04-12"))
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-
-    # Application title
     titlePanel("ronaVote"),
 
-    # Sidebar with a slider input for number of bins 
+    # Sidebar with a slider input for number of bins
     sidebarLayout(
         sidebarPanel(
+            
+            # sliderTextInput(
+            #     inputId = "choicesSliderText",
+            #     label = "Your choice:",
+            #     grid = TRUE, 
+            #     force_edges = TRUE,
+            #     choices = month.abb
+            # )
+            
+            # INPUT IS WORKING, BUT NEED SLIDERTEXTINPUT FOR DISCRETE WEEKLY INPUT
             sliderInput("weekDate",
                         "Date:",
                         min = as.Date(weekDates$weekDate[1], "%Y-%m-%d"),
@@ -189,6 +197,8 @@ ui <- fluidPage(
         )
     )
 )
+
+
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
