@@ -22,6 +22,8 @@ library(scales)
 library(data.table)
 library(broom)
 library(tidyverse)
+library(bslib)
+library(thematic)
 
 # IMPORTING DATA ---------------------------------------------------------------
 pathRona <- "./data/rona/NYT/us-counties_panel_2021-08-02.csv"
@@ -77,20 +79,17 @@ ronaSectionsTot <- ronaTall  %>%                                                
                 values_from = casesTot) %>%                                       # Only 1 row/county; 1 col/week. Total cases at each week
     mutate(across(starts_with("T"), ~replace_na(., 0)))                           # REPLACE casesTot NA'S WITH ZEROES
 
-# TRANSPOSE ronaDiff TO SECTIONS
-# JOIN WITH ronaSectionsTot TO MAKE ronaAllSections
-ronaAllSections <- ronaSectionsTot %>%
+# JOIN WITH popu AND vote_wide, CLEAN, ADD COLUMN CASES-PER-CAPITA -------------
+# REMOVE OTHER 
+rona <- ronaSectionsTot %>%
     left_join(fips_fipsText, by = "fipsText") %>%
     column_to_rownames(var = "fipsText") %>%
     left_join(rawData[["popu"]], by="fips") %>%
     left_join(vote_wide, by="fips")  %>%
-    filter(!is.na(pop2019))
+    filter(!is.na(pop2019)) %>%
+    mutate(across(starts_with("T"), function(x) {x/pop2019/100000} ))
 
 rm(fips_fipsText, rawData, ronaSectionsTot, ronaTall)
-
-# CONSTRUCT CASES-PER-CAPITA ---------------------------------------------------
-rona <- ronaAllSections %>%
-    mutate(across(starts_with("T"), function(x) {x/pop2019/100000} ))
 
 # RUN REGRESSIONS --------------------------------------------------------------
 lm_allT <- map(select(rona, starts_with("T")),
@@ -115,8 +114,12 @@ lm_dfT2 <- lm_dfT %>%
     filter(weekDate > as.Date("2020-04-12"))
 
 # PLOT -------------------------------------------------------------------------
+thematic_shiny()
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+    # theme = shinytheme("slate"),
+    theme = bs_theme(version = 4, bootswatch = "darkly"),
     titlePanel("Trend in Correlation Over Time"),
         # Show a plot of the generated distribution
         mainPanel(
