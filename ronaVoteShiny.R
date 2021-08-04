@@ -55,7 +55,6 @@ ronaTall <- rawData[["ronaDays"]] %>%
 weekDates <- distinct(ronaTall, week_DateT, weekDate) #THIS IS NEW
 fips_fipsText <- distinct(ronaTall, fips, fipsText, .keep_all = FALSE)                # keep fips fipsText dictionary
 
-
 # TIDY vote: WIDEN BY candidate ------------------------------------------------
 vote_wide <- rawData[["vote"]] %>%
     filter(year == 2020) %>%
@@ -69,9 +68,7 @@ vote_wide <- rawData[["vote"]] %>%
               REPUBLICAN = sum(REPUBLICAN),
               county_name = unique(county_name), 
               totalvotes = unique(totalvotes)) %>%
-    mutate(DEM_Margin = (DEMOCRAT - REPUBLICAN) / totalvotes)
-
-
+    mutate(DJT_Margin = (REPUBLICAN - DEMOCRAT) / totalvotes)
 
 # TIDY casesTot: WIDEN, NA'S-TO-ZEROES -----------------------------------------
 ronaSectionsTot <- ronaTall  %>%                                                # WIDEN rona FOR TOTAL CASES COLUMNS NAMED BY WEEKDATES
@@ -91,21 +88,15 @@ ronaAllSections <- ronaSectionsTot %>%
 
 rm(fips_fipsText, rawData, ronaSectionsTot, ronaTall) #, ronaDiff)
 
-# CONSTRUCT CALCULATED VARIABLES INCLUDING CASES-PER-CAPITA --------------------
-tP = sum(ronaAllSections$pop2019)                                     # total Population
+# CONSTRUCT CASES-PER-CAPITA ---------------------------------------------------
 rona <- ronaAllSections %>%
-    mutate(across(starts_with("T"), function(x) {x/pop2019/100000} )) %>%         # Make total cases / 100,000 population variables
-    arrange(DEM_Margin) %>%                                  # put counties in order of vote margin
-    mutate(cP = cumsum(pop2019)) %>%                         # new column = cumulative Sum of Population in order of vote margin
-    mutate(margin_qtile = ifelse(cP>tP*.75,4, ifelse(cP>tP*.5,3, ifelse(cP>tP*.25,2, 1)))) # label counties by their vote margin quartile (pop-weighted)
+    mutate(across(starts_with("T"), function(x) {x/pop2019/100000} ))
 
-
-
+# RUN REGRESSIONS --------------------------------------------------------------
 lm_allT <- map(select(rona, starts_with("T")),
                function(yvar) {
-                   return( lm(yvar ~ DEM_Margin, rona) )
+                   return( lm(yvar ~ DJT_Margin, rona) )
                })
-
 
 # GET REGRESSION OUTPUT --------------------------------------------------------
 lm_outT <- map(lm_allT, 
@@ -125,7 +116,6 @@ lm_dfT2 <- filter(lm_dfT2, weekDate > as.Date("2020-04-12"))
 
 
 # PLOT -------------------------------------------------------------------------
-
 # Define UI for application that draws a histogram
 ui <- fluidPage(
     titlePanel("ronaVote"),
@@ -140,7 +130,6 @@ server <- function(input, output) {
     output$distPlot1 <- renderPlot({
         lm_dfT2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovidTotal)) + geom_point()
         })
-
 }
 
 # Run the application 
