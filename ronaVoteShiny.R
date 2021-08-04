@@ -24,9 +24,9 @@ library(broom)
 library(tidyverse)
 
 # IMPORTING DATA ---------------------------------------------------------------
-pathRona <- "/home/bhrdwj/git/ronaVote/data/rona/NYT/us-counties_panel_2021-08-02.csv"
-pathVote <- "/home/bhrdwj/git/ronaVote/data/vote/Harvard/countypres_2000-2020.csv"
-pathPop <- "/home/bhrdwj/git/ronaVote/data/countyData/USDA_PopulationData/PopEst2019.csv"
+pathRona <- "./data/rona/NYT/us-counties_panel_2021-08-02.csv"
+pathVote <- "./data/vote/Harvard/countypres_2000-2020.csv"
+pathPop <- "./data/countyData/USDA_PopulationData/PopEst2019.csv"
 
 ronaDays <- fread(pathRona, select = grep(  "fips|date|cases",
                                             names(fread(pathRona, nrow = 0L)))) %>%
@@ -108,17 +108,16 @@ lm_outT <- map(lm_allT,
 
 # PROCESS REGRESSION OUTPUT ----------------------------------------------------
 lm_dfT <- as.data.frame(do.call(rbind, lm_outT))                                 # Data frame of Total Cases 
-colnames(lm_dfT) <- c("TrumpCountiesMoreCovidTotal", "RSquared", "PValue")
+colnames(lm_dfT) <- c("Correlation_MoreTrumpMargin_MoreCovid", "RSquared", "PValue")
 lm_dfT2 <- lm_dfT %>% 
     rownames_to_column(var = "week_DateT") %>%
     left_join(weekDates, by = "week_DateT") %>%
     filter(weekDate > as.Date("2020-04-12"))
 
-
 # PLOT -------------------------------------------------------------------------
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-    titlePanel("ronaVote"),
+    titlePanel("Trend in Correlation Over Time"),
         # Show a plot of the generated distribution
         mainPanel(
            plotOutput("distPlot1")
@@ -128,7 +127,7 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
     output$distPlot1 <- renderPlot({
-        lm_dfT2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovidTotal)) + geom_point()
+        lm_dfT2 %>% ggplot(aes(x=weekDate, y=Correlation_MoreTrumpMargin_MoreCovid)) + geom_point()
         })
 }
 
