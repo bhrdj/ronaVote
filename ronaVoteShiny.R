@@ -86,7 +86,7 @@ ronaAllSections <- ronaSectionsTot %>%
     left_join(vote_wide, by="fips")  %>%
     filter(!is.na(pop2019))
 
-rm(fips_fipsText, rawData, ronaSectionsTot, ronaTall) #, ronaDiff)
+rm(fips_fipsText, rawData, ronaSectionsTot, ronaTall)
 
 # CONSTRUCT CASES-PER-CAPITA ---------------------------------------------------
 rona <- ronaAllSections %>%
@@ -106,13 +106,13 @@ lm_outT <- map(lm_allT,
                       glance(an_lm)$p.value )
                })
 
-
 # PROCESS REGRESSION OUTPUT ----------------------------------------------------
-lm_dfT = as.data.frame(do.call(rbind, lm_outT))                                 # Data frame of Total Cases 
+lm_dfT <- as.data.frame(do.call(rbind, lm_outT))                                 # Data frame of Total Cases 
 colnames(lm_dfT) <- c("TrumpCountiesMoreCovidTotal", "RSquared", "PValue")
-lm_dfT2 = rownames_to_column(lm_dfT, var = "week_DateT")                        
-lm_dfT2 <- left_join(lm_dfT2, weekDates, by = "week_DateT")
-lm_dfT2 <- filter(lm_dfT2, weekDate > as.Date("2020-04-12"))
+lm_dfT2 <- lm_dfT %>% 
+    rownames_to_column(var = "week_DateT") %>%
+    left_join(weekDates, by = "week_DateT") %>%
+    filter(weekDate > as.Date("2020-04-12"))
 
 
 # PLOT -------------------------------------------------------------------------
