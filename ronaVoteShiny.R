@@ -1,3 +1,7 @@
+# ronaVoteShiny.R
+# Ongoing COVID and the 2020 USA Election: Time Trends in a County Correlation
+
+# CODE AND INFO FOR LATER ------------------------------------------------------
 # pathRona <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
 # pathVote <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/vote/Harvard/countypres_2000-2020.csv"
 # pathPop <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/countyData/USDA_PopulationData/PopEst2019.csv"
@@ -12,13 +16,14 @@
 # rm(list = ls())
 # .rs.restartR()
 
-
+# IMPORTING LIBRARIES ----------------------------------------------------------
 library(shiny)
 library(scales)
 library(data.table)
 library(broom)
 library(tidyverse)
 
+# IMPORTING DATA ---------------------------------------------------------------
 pathRona <- "/home/bhrdwj/git/ronaVote/data/rona/NYT/us-counties_panel_2021-08-02.csv"
 pathVote <- "/home/bhrdwj/git/ronaVote/data/vote/Harvard/countypres_2000-2020.csv"
 pathPop <- "/home/bhrdwj/git/ronaVote/data/countyData/USDA_PopulationData/PopEst2019.csv"
@@ -36,6 +41,7 @@ rawData <- list(ronaDays=ronaDays, popu=popu, vote=vote) %>%                    
     map(function(x) { filter(x, !is.na(fips)) })
 rm(pathRona, pathVote, pathPop, ronaDays, popu, vote)
 
+# ORGANIZE AND CLEAN TALL (MELTED) DATA ----------------------------------------
 zeroMonday <- as.IDate("2019-12-29")                                            # Base date for counting weeks
 zeroMondayInt <- as.numeric(zeroMonday)
 
