@@ -174,6 +174,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             
+            # http://shinyapps.dreamrs.fr/shinyWidgets/
             # sliderTextInput(
             #     inputId = "choicesSliderText",
             #     label = "Your choice:",
