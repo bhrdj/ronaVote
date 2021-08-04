@@ -163,60 +163,21 @@ lm_dfW2 <- filter(lm_dfW2, weekDate > as.Date("2020-04-12"))
 
 # PLOT -------------------------------------------------------------------------
 
-
-
-
 # Define UI for application that draws a histogram
 ui <- fluidPage(
     titlePanel("ronaVote"),
-
-    # Sidebar with a slider input for number of bins
-    sidebarLayout(
-        sidebarPanel(
-            
-            # http://shinyapps.dreamrs.fr/shinyWidgets/
-            # sliderTextInput(
-            #     inputId = "choicesSliderText",
-            #     label = "Your choice:",
-            #     grid = TRUE, 
-            #     force_edges = TRUE,
-            #     choices = month.abb
-            # )
-            
-            # INPUT IS WORKING, BUT NEED SLIDERTEXTINPUT FOR DISCRETE WEEKLY INPUT
-            sliderInput("weekDate",
-                        "Date:",
-                        min = as.Date(weekDates$weekDate[1], "%Y-%m-%d"),
-                        max = as.Date(weekDates$weekDate %>% .[length(.)], "%Y-%m-%d"),
-                        value = as.Date(weekDates$weekDate %>% .[length(.)], "%Y-%m-%d"),
-                        timeFormat = "%Y-%m-%d")
-        ),
-
         # Show a plot of the generated distribution
         mainPanel(
            plotOutput("distPlot1")
         )
-    )
 )
-
-
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
     output$distPlot1 <- renderPlot({
-        lm_dfT2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovidTotal)) + geom_point() +
-            geom_point(aes(x = input$weekDate, y = filter(lm_dfT2, weekDate == input$weekDate)$TrumpCountiesMoreCovidTotal), color='red') # Weekly New Cases
+        lm_dfT2 %>% ggplot(aes(x=weekDate, y=TrumpCountiesMoreCovidTotal)) + geom_point()
         })
 
-    
-    # output$distPlot <- renderPlot({
-    #     # generate bins based on input$bins from ui.R
-    #     x    <- popu$log10_pop
-    #     bins <- seq(min(x), max(x), length.out = input$bins + 1)
-    #     # draw the histogram with the specified number of bins
-    #     hist(x, breaks = bins, col = 'darkgray', border = 'white')
-    #     })
-    
 }
 
 # Run the application 
