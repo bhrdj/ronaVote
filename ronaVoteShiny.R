@@ -20,9 +20,10 @@
 library(data.table)
 library(broom)
 library(tidyverse)
-library(shiny)
-library(bslib)
-library(thematic)
+library(ggdark)
+# library(shiny)
+# library(bslib)
+# library(thematic)
 
 # IMPORTING DATA ---------------------------------------------------------------
 pathRona <- "./data/rona/NYT/us-counties_panel_2021-08-02.csv"
@@ -93,10 +94,11 @@ rm(fips_fipsText, rawData, ronaTall) #,  ronaSectionsTot)
 # RUN REGRESSIONS --------------------------------------------------------------
 lm_allT <-  map(select(rona, starts_with("T")), 
                        function(yvar) {lm(yvar ~ DJT_Margin, rona)} )
-
+                        # function(yvar) {lm(yvar ~ DJT_Margin, rona)} )
 # GET REGRESSION OUTPUT --------------------------------------------------------
 # UNITS OF ESTIMATE: 
-#   Y: vote margin (decimal)   X: cases/population 
+#   Y: vote margin (decimal)   X: cases/population (1/1)
+#   
 lm_outT <- map(lm_allT, 
                function(an_lm) {
                    c( tidy(an_lm)$estimate[2], 
@@ -112,26 +114,64 @@ lm_dfT2 <- lm_dfT %>%
     left_join(weekDates, by = "week_DateT") %>%
     filter(weekDate > as.Date("2020-04-12"))
 
+
 # PLOT -------------------------------------------------------------------------
-thematic_shiny()
 
-# Define UI for application that draws a histogram
-ui <- fluidPage(
-    # theme = shinytheme("slate"),
-    theme = bs_theme(version = 4, bootswatch = "darkly"),
-    titlePanel("Trend in Correlation Over Time"),
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot1")
-        )
-)
+TrumpMargin_vs_CovidPerCap <- lm_dfT2 %>% 
+    ggplot(aes(x=weekDate, y=Correlation_MoreTrumpMargin_MoreCovid)) + geom_point()
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
-    output$distPlot1 <- renderPlot({
-        lm_dfT2 %>% ggplot(aes(x=weekDate, y=Correlation_MoreTrumpMargin_MoreCovid)) + geom_point()
-        })
-}
+TrumpMargin_vs_CovidPerCap + dark_theme_gray()
 
-# Run the application 
-shinyApp(ui = ui, server = server)
+
+# # PLOT -------------------------------------------------------------------------
+# thematic_shiny()
+# 
+# # Define UI for application that draws a histogram
+# ui <- fluidPage(
+#     # theme = shinytheme("slate"),
+#     theme = bs_theme(version = 4, bootswatch = "darkly"),
+#     titlePanel("Trend in Correlation Over Time"),
+#         # Show a plot of the generated distribution
+#         mainPanel(
+#            plotOutput("distPlot1")
+#         )
+# )
+# 
+# # Define server logic required to draw a histogram
+# server <- function(input, output) {
+#     output$distPlot1 <- renderPlot({
+#         lm_dfT2 %>% ggplot(aes(x=weekDate, y=Correlation_MoreTrumpMargin_MoreCovid)) + geom_point()
+#         })
+# }
+# 
+# # Run the application 
+# shinyApp(ui = ui, server = server)
+
+
+
+
+
+
+
+
+
+# A correlation of .01 (naively) implies that 
+  # an increase of 1 in the vote margin correlates with an increase in .01 cases per population.
+  # But the vote margin is only relevant in smaller increments, so let's divide by 100.
+# So we can say that a correlation of .01 implies that 
+  # an increase of .01 margin correlates with an increase in .0001 cases per population.
+
+# if .005 of voters switch their vote, that's a +.01 margin
+    # +.01 margin corresponds to a total of 155,146,377 * .005 = 775,732 votes
+
+# +.0001 cases per population corresponds to 322,793,363 * +.0001 = 32,279 cases
+
+# 775,732 votes divided by 32,279 cases equals a marginal rate of about 25 votes per case
+
+# Consider an example county with 10,000 Americans, including 5,000 voters. 
+  # If the county were to move along this margin such that 
+  # there were 25 more REPUBLICAN voters and 25 fewer DEMOCRAT voters, 
+  # then that would increase the margin by +.01, 
+  # corresponding to one additional case in the county.
+
+
