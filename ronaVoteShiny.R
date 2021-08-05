@@ -17,11 +17,10 @@
 # .rs.restartR()
 
 # IMPORTING LIBRARIES ----------------------------------------------------------
-library(shiny)
-library(scales)
 library(data.table)
 library(broom)
 library(tidyverse)
+library(shiny)
 library(bslib)
 library(thematic)
 
@@ -72,32 +71,32 @@ vote_wide <- rawData[["vote"]] %>%
               totalvotes = unique(totalvotes)) %>%
     mutate(DJT_Margin = (REPUBLICAN - DEMOCRAT) / totalvotes)
 
-# TIDY casesTot: WIDEN, NA'S-TO-ZEROES -----------------------------------------
+# TIDY casesTot: WIDEN, NA'S-TO-ZEROES, JOIN WITH popu AND vote_wide------------
 ronaSectionsTot <- ronaTall  %>%                                                # WIDEN rona FOR TOTAL CASES COLUMNS NAMED BY WEEKDATES
-    pivot_wider(id_cols = fipsText,                                                # ONE ROW FOR EACH FIPS COUNTY
+    pivot_wider(id_cols = fipsText,                                             # ONE ROW FOR EACH FIPS COUNTY
                 names_from = week_DateT, 
-                values_from = casesTot) %>%                                       # Only 1 row/county; 1 col/week. Total cases at each week
-    mutate(across(starts_with("T"), ~replace_na(., 0)))                           # REPLACE casesTot NA'S WITH ZEROES
-
-# JOIN WITH popu AND vote_wide, CLEAN, ADD COLUMN CASES-PER-CAPITA -------------
-# REMOVE OTHER 
-rona <- ronaSectionsTot %>%
+                values_from = casesTot) %>%                                     # Only 1 row/county; 1 col/week. Total cases at each week
+    mutate(across(starts_with("T"), ~replace_na(., 0))) %>%                     # REPLACE casesTot NA'S WITH ZEROES
     left_join(fips_fipsText, by = "fipsText") %>%
     column_to_rownames(var = "fipsText") %>%
     left_join(rawData[["popu"]], by="fips") %>%
     left_join(vote_wide, by="fips")  %>%
-    filter(!is.na(pop2019)) %>%
-    mutate(across(starts_with("T"), function(x) {x/pop2019/100000} ))
+    filter(!is.na(pop2019))
 
-rm(fips_fipsText, rawData, ronaSectionsTot, ronaTall)
+# ADD COLUMN CASES-PER-CAPITA -------------
+# REMOVE OTHER VARS
+rona <- ronaSectionsTot %>%
+    mutate(across(starts_with("T"), function(x) {x/pop2019} ))
+
+rm(fips_fipsText, rawData, ronaTall) #,  ronaSectionsTot)
 
 # RUN REGRESSIONS --------------------------------------------------------------
-lm_allT <- map(select(rona, starts_with("T")),
-               function(yvar) {
-                   return( lm(yvar ~ DJT_Margin, rona) )
-               })
+lm_allT <-  map(select(rona, starts_with("T")), 
+                       function(yvar) {lm(yvar ~ DJT_Margin, rona)} )
 
 # GET REGRESSION OUTPUT --------------------------------------------------------
+# UNITS OF ESTIMATE: 
+#   Y: vote margin (decimal)   X: cases/population 
 lm_outT <- map(lm_allT, 
                function(an_lm) {
                    c( tidy(an_lm)$estimate[2], 
