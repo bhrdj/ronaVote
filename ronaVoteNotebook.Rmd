@@ -47,6 +47,12 @@ h4.date {
     left: 50%;
     transform: translate(-50%, 0%);
 }
+hr{
+        height: 1px;
+        background-color: #FFF;
+        border: none;
+}
+
 </style>
 
 <div id="homeLink"><a href="../index.html"><p align="center">
@@ -58,8 +64,9 @@ In Spring and Summer of 2020, predominantly politically Democratic cities like N
 
 The maximum correlation of Democratic areas and cumulative severity of COVID occurred the second week of August 2020, at 0.00008 COVID-cases per percentage point of vote margin. (8 per 100,000 population) By the second week of November, the Democratic and Republican areas had accumulated balanced counts, at the moment of the election. The maximum correlation of Republican areas with cumulative COVID cases occurred in the second or third week of January 2021, at .00017 COVID-cases per percentage point of vote margin. (17 per 100,000)
 
-## Clean, Tidy, and Regress Data
-```{r, echo=FALSE, warning=FALSE} , message=FALSE, results=FALSE}
+<hr>
+### Clean, Tidy, and Regress Data
+```{r, echo=FALSE, warning=FALSE , message=FALSE, results=FALSE}
 library(rmarkdown)
 library(data.table)
 library(broom)
@@ -67,6 +74,7 @@ library(tidyverse)
 library(ggdark)
 ```
 
+<hr>
 #### Import and clean data
 ```{r}
 # pathRona <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
@@ -115,6 +123,7 @@ weekDates <- distinct(ronaTall, week_DateT, weekDate)
 fips_fipsText <- distinct(ronaTall, fips, fipsText, .keep_all = FALSE)
 ```
 
+<hr>
 #### Tidy data
 ```{r}
 # Tidy election data:
@@ -148,7 +157,7 @@ ronaSectionsTot_BeforeCleaning <- ronaTall  %>%
     pivot_wider(id_cols = fipsText,
                 names_from = week_DateT, 
                 values_from = casesTot) %>%
-    mutate(across(starts_with("T"), ~replace_na(., 0)))  %>%
+    mutate(across(starts_with("T", ignore.case=FALSE), ~replace_na(., 0)))  %>%
     left_join(fips_fipsText, by = "fipsText") %>%
     left_join(rawData[["popu"]], by="fips") %>%
     left_join(vote_wide, by="fips") %>%
@@ -156,6 +165,10 @@ ronaSectionsTot_BeforeCleaning <- ronaTall  %>%
 
 ```
 
+<hr>
+#### Review 114 FIPS Code Records Dropped From Dataset for Missing Data
+<details>
+<summary>*Warning: Large dropdown window*</summary>
 ```{r}
 # FIND UNCLEAN OBSERVATIONS TO BE DROPPED OR REPAIRED
 countiesWithNA_somewhere <- ronaSectionsTot_BeforeCleaning %>% 
@@ -168,7 +181,7 @@ countiesWithNA_somewhere <- ronaSectionsTot_BeforeCleaning %>%
         is.na(pop2019)
         )
 
-# VIEW THESE FIPS COUNTIES (MANY SOMEHOW DON'T HAVE NAMES...???)
+# VIEW THESE FIPS COUNTIES (MANY SOMEHOW DON'T HAVE NAMES!)
 countiesWithNA_somewhere
 
 # DROP THEM
@@ -176,7 +189,13 @@ countiesWithNA_fips <- countiesWithNA_somewhere %>%
   select("fips")
 
 ronaSectionsTot <- ronaSectionsTot_BeforeCleaning %>%
-  filter(!(fips %in% countiesWithNA_fips))
+    filter( 
+      !is.na(DEMOCRAT) &
+      !is.na(REPUBLICAN) &
+      !is.na(totalvotes) &
+      !is.na(fips) &
+      !is.na(pop2019)
+      )
 
 # STEPS TO FIX:
 #   UPDATE TO THE POPULATION DATA BASED ON THE 2020 CENSUS
@@ -184,26 +203,42 @@ ronaSectionsTot <- ronaSectionsTot_BeforeCleaning %>%
 #   MANUALLY FIX THE FEW COUNTIES I CAN FROM OTHER DATA ALREADY IN THIS Rmd
 #   SLEUTH AROUND MYSELF TO FIND THESE MYSTERY COUNTIES
 
-
 ```
+</summary>
 
-
-
+<hr>
+#### Calculate Summary Data
 ```{r}
 # Calculate a column for COVID-cases-per-capita.
 ronaPerCap <- ronaSectionsTot %>%
-    mutate(across(starts_with("T"), function(x) {x/pop2019} ))
+    mutate(across(starts_with("T", ignore.case=FALSE), function(x) {x/pop2019} ))
 
 # Remove unused variables
-rm(fips_fipsText, rawData) #, ronaTall, ronaSectionsTot)
+rm(rawData) #, ronaTall, ronaSectionsTot)
+
+# Calc national summary data
+nationalSummaries <- ronaSectionsTot %>%
+  select(c("pop2019", "totalvotes", "REPUBLICAN", "DEMOCRAT")) %>%
+  mutate(RPlusDVotes= REPUBLICAN + DEMOCRAT) %>%
+  colSums()
+
+# Calc USA Aggregate COVID Data
+ronaTotalUSA <- ronaSectionsTot %>%
+  select(starts_with("T", ignore.case=FALSE)) %>%
+  colSums()
+
+# Calc USA Aggregate COVID Data
+ronaPerCapUSA <- ronaTotalUSA / nationalSummaries["pop2019"]
+
 ```
 
+<hr>
 #### Regress
 ```{r}
 # Regress COVID cases-per-capita on election data
     # One regression for each week
     # Each regression across the cross-section of FIPS counties
-lm_allT <-  map(select(ronaPerCap, starts_with("T")), 
+lm_allT <-  map(select(ronaPerCap, starts_with("T", ignore.case=FALSE)), 
                        function(yvar) {
                          lm(yvar ~ DJT_Margin, ronaPerCap)
                          })
@@ -218,40 +253,28 @@ lm_outT <- map(lm_allT,
 
 lm_dfT <- as.data.frame(do.call(rbind, lm_outT))
 colnames(lm_dfT) <- c("BetaCoeff", "RSquared", "PValue")
+```
 
-# Calc additional national columns for analysis  NOT DONE WITH THIS !!!!!!!!!!!!
-ronaTotalUSA <- ronaSectionsTot %>% 
-  select(starts_with("T", ignore.case=FALSE)) %>% 
-  colSums()
-
-nationalSummaries <- ronaSectionsTot %>%
-  select(c("pop2019", "totalvotes", "REPUBLICAN", "DEMOCRAT")) %>%
-  mutate(RPlusDVotes= REPUBLICAN + DEMOCRAT) %>%
-  colSums()
-
-
-# colSums(ronaSectionsTot[
-#   c("pop2019", "totalvotes", "REPUBLICAN", "DEMOCRAT")]) %>%
-#   add_column()
-# ronaTtlPerCapUSA <- ronaTotalUSA %>% 
-  
-
-
+<hr>
+#### Make Regression Output Summary Tables
+```{r}
 # Join additional columns for analysis
-coeff_R2_p_df <- lm_dfT %>% 
-    rownames_to_column(var = "week_DateT") %>%
-    left_join(weekDates, by = "week_DateT") %>%
-    add_column(ronaTotalUSA) %>%
-    column_to_rownames("week_DateT") %>%
-    filter(weekDate > as.Date("2020-04-12"))
+timeSeriesResults <- lm_dfT %>% 
+  rownames_to_column(var = "week_DateT") %>%
+  left_join(weekDates, by = "week_DateT") %>%
+  add_column(ronaTotalUSA) %>%
+  column_to_rownames("week_DateT") %>%
+  filter(weekDate > as.Date("2020-04-12"))
 
-
-
+# Reorder columns
+timeSeriesResults <- 
+  timeSeriesResults[c("BetaCoeff", "ronaTotalUSA", "RSquared", "PValue", "weekDate")]
 
 rm(lm_allT, lm_outT, lm_dfT)
 ```
 
-## Plot Coefficients Over Time
+<hr>
+### Plot Coefficients Over Time
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
 title_ = "Magnitude of Coefficients Over Time"
 subtitle_ = "(Between Percap COVID and 2020 Vote Margin Across USA Counties)"
@@ -259,31 +282,31 @@ caption_ = paste(
   "Each data point is a regression coefficient,\n",
   "at a particular week, across all USA FIPS counties, between:\n",
   "per-capita cumulative COVID cases, and\n",
-  "the 2019 vote margin.\n\n",
+  "the 2020 vote margin.\n\n",
   "A coefficient of +0.01 means that:\n",
   "an increase of +.01 in vote margin (+Republican) would correlate with\n",
   "an increase of +1 COVID case per 10,000 population.")
 ```
 
 ```{r fig.align='center', warning=FALSE, message=FALSE}
-Margin_vs_CovidPerCap <- coeff_R2_p_df %>% 
+Margin_vs_CovidPerCap <- timeSeriesResults %>% 
     ggplot(aes(x=weekDate, 
                y=BetaCoeff)) +
-      labs(title=title_, subtitle=subtitle_, caption=caption_) +
-      xlab("Date") + ylab("Regression Coefficient") +
-      scale_y_continuous(limits=c(-.01, .02)) +
-      geom_hline(yintercept = 0, linetype = "solid", color = "white", size = .5) +
-      geom_point(aes(color=BetaCoeff)) +
-      scale_colour_gradient(low="#0000ff", high="#ff0000", guide=FALSE)
+        labs(title=title_, subtitle=subtitle_, caption=caption_) +
+        xlab("Date") + ylab("Regression Coefficient") +
+        scale_y_continuous(limits=c(-.01, .02)) +
+        geom_hline(yintercept = 0, linetype = "solid", color = "white", size = .5) +
+        geom_point(aes(color=BetaCoeff)) +
+        scale_colour_gradient(low="#0000ff", high="#ff0000", guide=FALSE)
 
 Margin_vs_CovidPerCap + dark_theme_gray()
 ```
 
-<br>
+<hr>
 
-## Discussion
+### Discussion
 
-### Overview
+#### Overview
 Each plotted point on the graph is a cross-section regression coefficient, taken at a point in time. It measures a correlation at that time across the cross-section of all USA FIPS counties, and this is done every week.
 
 The coefficient measures correlation between:
@@ -294,34 +317,43 @@ Of course, the 2020 vote margin doesn't change, only the cumulative count of COV
 
 Note that the coefficient was negative in early 2020, when counties that voted more-Democrat initially experienced greater vulnerability to the virus.  Then that switched to the opposite in Fall 2020. 
 
-### Maximum and minimum values
+#### Maximum and minimum values
 The maximum correlation of Democratic areas and cumulative severity of COVID occurred at a level of -.008 during the second week of August 2020. That is, +8 COVID cases per 100,000 population per percentage point of Democrat vote margin.  By the second week of November, the Democratic and Republican areas had accumulated balanced counts, at the moment of the election. The maximum correlation of Republican areas with cumulative COVID cases occurred in the second or third week of January 2021 at .017, or 17 cases per 100,000 population per percentage point of vote margin.
 
-
-## Magnitudes in Context
+<hr>
+### Magnitudes in Context
+First, we need a table of summary statistics of the USA:
 ```{r}
-keyWeeks <- coeff_R2_p_df %>% 
+nationalSummaries
+```
+Next, here is a table of the key max and min values from the regression tables, as well as the most recent coefficient.
+```{r}
+maxMinTable <- timeSeriesResults %>% 
   slice(c(
     which.min(BetaCoeff),
     which.max(BetaCoeff),
     which.min(abs(BetaCoeff)),
     n()
-    ))
+    )) %>%
+  mutate(across(c("BetaCoeff", "ronaTotalUSA", "RSquared", "PValue"), ~ signif(.x, digits=3)))
 
-maxRepubCorr <- max(coeff_R2_p_df$BetaCoeff)
-maxDemocCorr <- min(coeff_R2_p_df$BetaCoeff)
-balanceCorr <- min(abs(coeff_R2_p_df$BetaCoeff))
-
-coeff_R2_p_df %>% filter(BetaCoeff %in% c(maxRepubCorr, maxDemocCorr, balanceCorr))
-
-
-
+rownames(maxMinTable) <- 
+  c("Peak Dem. Coeff",
+    "Near-zero Coeff",
+    "Peak Rep. Coeff",
+    "Current Status")
+maxMinTable
 ```
 
+<!--
+To put this in context, there were 4,795,395 /  cumulative USA cases per 100,000 in the second week of August 2020, and *** per 100,000 in January 2021.
 
-## To put this in context, there were 4,795,395 /  cumulative USA cases per 100,000 in the second week of August 2020, and *** per 100,000 in January 2021.
+I NEED TO PUT ALL PERCAP DATA IN TERMS OF PER-100,000 PEOPLE, OR ELSE IT'S INCOMPREHESIBLE TO THE LAYMAN
 
-## Interpreting the Magnitude of Coefficients
+-->
+
+<hr>
+### Interpreting the Magnitude of Coefficients
 A coefficient of +.01 naively implies that an change of 1 in the vote margin correlates with an increase in .01 cases per population. But, the vote margin is only relevant in smaller increments, so let's divide by 100.
 
 So, a coefficient of +0.01 means that an increase of +.01 in vote margin (+ defined as + Republican), would correlate with an increase of +1 COVID case per 10,000 population. This "increase" is not happening over time, it is a way of making an incremental comparison between different counties in the cross-section.
@@ -332,14 +364,16 @@ Consider an example county with 10,000 Americans, including 5,000 voters, and pr
 
 If the county were to hypothetically move along this margin such that there were 25 more Republican voters and 25 fewer Democrat voters, then that would increase the margin by +.01, corresponding to one additional case in the county.
 
-## Correlation, Causality, and References
+<hr>
+### Correlation, Causality, and References
 I think I should leave it to epidemiologists to publicly cast judgement on how to make the correct inference from this correlation.
 
-This observation [has](https://www.nytimes.com/interactive/2021/04/17/us/vaccine-hesitancy-politics.html) been [reported](https://www.npr.org/sections/health-shots/2020/11/06/930897912/many-places-hard-hit-by-covid-19-leaned-more-toward-trump-in-2020-than-2016)  since even [before](https://www.washingtonpost.com/politics/2021/07/27/rate-new-infections-is-about-twice-high-red-counties-blue-counties/) the election, but I hope you found this presentation interesting or relevant.
+This correlation [has](https://www.nytimes.com/interactive/2021/04/17/us/vaccine-hesitancy-politics.html) been [reported](https://www.npr.org/sections/health-shots/2020/11/06/930897912/many-places-hard-hit-by-covid-19-leaned-more-toward-trump-in-2020-than-2016)  since even [before](https://www.washingtonpost.com/politics/2021/07/27/rate-new-infections-is-about-twice-high-red-counties-blue-counties/) the election, but I hope you found this presentation interesting and relevant.
 
-
-## Additional Analysis
+<hr>
+### Additional Analysis
  * Plot similar graphs for within-states and between-states coefficients over time.
+ * Redo analysis using per-100,000 statistics instead of per-capita
 
 
 <!--
