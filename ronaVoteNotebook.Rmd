@@ -3,7 +3,7 @@ title: "ronaVote"
 subtitle: "Ongoing COVID and the 2020 USA Election: Time Trends and Magnitudes of Correlation among the Cross-section of Counties"
 author: "Author: Steven Bhardwaj"
 date: "2021-08-04"
-output:
+output: 
   html_document:
     theme:
       bootswatch: darkly
@@ -15,11 +15,6 @@ output:
   margin: 0;
   padding: 0;
 }
-@font-face {
-  font-family: "OracleBoneFont_Subset";
-  src: url("../ebas927_Subset_PanOnly.ttf") format("truetype");
-}
-
 h1.title {
   padding-top: 2em;
   text-align: center;
@@ -37,32 +32,34 @@ h4.date {
 }
 
 #homeLink {
-    font-size: 1.5em;
-    color: #CCCCCC !important;
-    opacity: 1;
-    width: 5em;
-  	height: 1.2em;
-    position: absolute;
-    top: 3%;
-    left: 50%;
-    transform: translate(-50%, 0%);
+  font-size: 1.5em;
+  color: #CCCCCC !important;
+  opacity: 1;
+  width: 5em;
+	height: 1.2em;
+  position: absolute;
+  top: 3%;
+  left: 50%;
+  transform: translate(-50%, 0%);
 }
 hr{
-        height: 1px;
-        background-color: #FFF;
-        border: none;
+  height: 1px;
+  background-color: #FFF;
+  border: none;
 }
 
 </style>
 
 <div id="homeLink"><a href="../index.html"><p align="center">
-bhrdwj.net<br>潘
+bhrdwj.net
+<br>
+潘
 </p></a></div>
 
 ## Abstract
 In Spring and Summer of 2020, predominantly politically Democratic cities like NYC suffered the worst of the first COVID wave. But after the Fall and the election passed, the winter saw much worse COVID in many Republican-majority areas.
 
-The maximum correlation of Democratic areas and cumulative severity of COVID occurred the second week of August 2020, at 0.00008 COVID-cases per percentage point of vote margin. (8 per 100,000 population) By the second week of November, the Democratic and Republican areas had accumulated balanced counts, at the moment of the election. The maximum correlation of Republican areas with cumulative COVID cases occurred in the second or third week of January 2021, at .00017 COVID-cases per percentage point of vote margin. (17 per 100,000)
+The maximum correlation of Democratic areas and cumulative severity of COVID occurred the second week of August 2020, at 8 COVID-cases per 100,000 population per percentage point of vote margin. By the second week of November, the Democratic and Republican areas had accumulated balanced counts, coinciding with the moment of the election. The maximum correlation of Republican areas with cumulative COVID cases occurred in the second or third week of January 2021, at 17 cases per 100,000 per percentage point.
 
 <hr>
 ### Clean, Tidy, and Regress Data
@@ -74,7 +71,6 @@ library(tidyverse)
 library(ggdark)
 ```
 
-<hr>
 #### Import and clean data
 ```{r}
 # pathRona <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
@@ -167,8 +163,7 @@ ronaSectionsTot_BeforeCleaning <- ronaTall  %>%
 
 <hr>
 #### Review 114 FIPS Code Records Dropped From Dataset for Missing Data
-<details>
-<summary>*Warning: Large dropdown window*</summary>
+<details><summary>*Warning: Large dropdown window*</summary>
 ```{r}
 # FIND UNCLEAN OBSERVATIONS TO BE DROPPED OR REPAIRED
 countiesWithNA_somewhere <- ronaSectionsTot_BeforeCleaning %>% 
@@ -204,7 +199,7 @@ ronaSectionsTot <- ronaSectionsTot_BeforeCleaning %>%
 #   SLEUTH AROUND MYSELF TO FIND THESE MYSTERY COUNTIES
 
 ```
-</summary>
+</summary></details>
 
 <hr>
 #### Calculate Summary Data
@@ -345,13 +340,6 @@ rownames(maxMinTable) <-
 maxMinTable
 ```
 
-<!--
-To put this in context, there were 4,795,395 /  cumulative USA cases per 100,000 in the second week of August 2020, and *** per 100,000 in January 2021.
-
-I NEED TO PUT ALL PERCAP DATA IN TERMS OF PER-100,000 PEOPLE, OR ELSE IT'S INCOMPREHESIBLE TO THE LAYMAN
-
--->
-
 <hr>
 ### Interpreting the Magnitude of Coefficients
 A coefficient of +.01 naively implies that an change of 1 in the vote margin correlates with an increase in .01 cases per population. But, the vote margin is only relevant in smaller increments, so let's divide by 100.
@@ -366,7 +354,7 @@ If the county were to hypothetically move along this margin such that there were
 
 <hr>
 ### Correlation, Causality, and References
-I think I should leave it to epidemiologists to publicly cast judgement on how to make the correct inference from this correlation.
+For now, I must leave it to epidemiologists to publicly cast judgement on how to draw correct inference from this correlation.
 
 This correlation [has](https://www.nytimes.com/interactive/2021/04/17/us/vaccine-hesitancy-politics.html) been [reported](https://www.npr.org/sections/health-shots/2020/11/06/930897912/many-places-hard-hit-by-covid-19-leaned-more-toward-trump-in-2020-than-2016)  since even [before](https://www.washingtonpost.com/politics/2021/07/27/rate-new-infections-is-about-twice-high-red-counties-blue-counties/) the election, but I hope you found this presentation interesting and relevant.
 
@@ -374,7 +362,7 @@ This correlation [has](https://www.nytimes.com/interactive/2021/04/17/us/vaccine
 ### Additional Analysis
  * Plot similar graphs for within-states and between-states coefficients over time.
  * Redo analysis using per-100,000 statistics instead of per-capita
-
+ * Put magnitude of effect in context of aggregate figures
 
 <!--
 # if .005 of voters switch their vote, that's a +.01 margin
