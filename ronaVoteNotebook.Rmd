@@ -1,8 +1,8 @@
 ---
 title: "ronaVote"
-subtitle: "Ongoing COVID and the 2020 USA Election: Time Trends and Magnitudes of Correlation among the Cross-section of Counties"
+subtitle: "Ongoing COVID and the 2020 Election: Time Trends and Magnitudes of Naive Correlation Among the Cross-section of USA Counties"
 author: "Author: Steven Bhardwaj"
-date: "2021-08-04"
+date: "Posted 2021-08-04. Updated 2021-08-09."
 output: 
   html_document:
     theme:
@@ -47,8 +47,18 @@ hr{
   background-color: #FFF;
   border: none;
 }
-
+.center_plots {
+  font-size: 1em;
+  text-align: center;
+  margin: auto;
+  width: 70%;
+}
+.width_auto {
+  margin: auto;
+  width: 100%;
+}
 </style>
+
 
 <div id="homeLink"><a href="../index.html"><p align="center">
 bhrdwj.net
@@ -57,18 +67,84 @@ bhrdwj.net
 </p></a></div>
 
 ## Abstract
-In Spring and Summer of 2020, predominantly politically Democratic cities like NYC suffered the worst of the first COVID wave. But after the Fall and the election passed, the winter saw much worse COVID in many Republican-majority areas.
+<br>
+In Spring and Summer of 2020, predominantly politically Democratic counties suffered the worst of the first COVID wave. But after the Fall and the election passed, the winter saw much worse COVID in Republican-leaning counties.
 
-The maximum correlation of Democratic areas and cumulative severity of COVID occurred the second week of August 2020, at 8 COVID-cases per 100,000 population per percentage point of vote margin. By the second week of November, the Democratic and Republican areas had accumulated balanced counts, coinciding with the moment of the election. The maximum correlation of Republican areas with cumulative COVID cases occurred in the second or third week of January 2021, at 17 cases per 100,000 per percentage point.
+<br>
+<hr> ## Plots
 
-<hr>
-### Clean, Tidy, and Regress Data
+<div class="center_plots">
+#### Cross-Section Scatterplots, Population-Weighted Regression
+<br>
+
+*Democratic-leaning areas initially had more COVID.*
+<br><br>
+<img src="./png/xs_2020-08-09.png">
+<br><br>
+
+*Balanced COVID at the moment of the election.*
+<br><br>
+<img src="./png/xs_2020-11-01.png">
+<br><br>
+
+
+*To date, Republican areas have accumulated more COVID overall.*
+<br><br>
+<img src="./png/xs_2021-08-08.png">
+<br>
+</div>
+
+<div class="width_auto">
+<br><hr><br>
+</div>
+
+<div class="center_plots">
+#### Time Series Plot of Linear Regression Coefficients
+<br>
+<img  src="./png/weighted_2021-08-09.png">
+<br>
+</div>
+
+<div class="width_auto">
+<br><hr> 
+</div>
+
+
+## Discussion
+
+#### Overview
+Each plotted point on the time series graph represents a cross-section regression coefficient, taken at a point in time. The coefficient measures a correlation at that time across the cross-section of all USA FIPS counties, and this is done every week.
+
+The coefficient measures correlation between:
+
+ - per-1,000-population cumulative COVID cases, and
+ - the 2020 presidential election vote margin in decimals
+
+Of course, the 2020 vote margin doesn't change, only the cumulative count of COVID cases can change. And, the cumulative counts can never decrease, by definition. When a trend appears, such as counties that voted more-Republican having suffered more cumulative COVID cases, then the coefficient will increase with that trend.
+
+Note that the coefficient was negative in early 2020, when counties that voted more-Democrat initially experienced greater vulnerability to the virus.  Then that switched to the opposite in Fall 2020. 
+
+#### Magnitude of the Effect
+The maximum correlation of Democratic areas and cumulative severity of COVID occurred the second week of August 2020, at 8 COVID-cases per 100,000 population per percentage point of presidential vote-margin. By the first week of November, it was balanced. The maximum Republican correlation is also the latest correlation, at 19 cases per 100,000 per % vote-margin. 
+
+Overall in the USA today, one in ten USA residents has tested positive for COVID. So, an additional 2 out of ten thousand represents a 0.2% difference in the total level of cumulative COVID cases. On 2021-08-08, the R² is 0.054 and the p-value on is 3E-39.
+
+#### Why?
+
+It cannot be overemphasized that *there is no information about causality in this study!*  The correlations here could be due to any number of biological, socioeconomic, or geographic factors.
+
+This analysis merely (albeit confidently) shows that Democratic-leaning counties were *somehow* more vulnerable to COVID in Spring 2020. Then, that trend fully reversed, and since Fall 2020 Republican-leaning counties have *somehow* experienced overall greater vulnerability to COVID. 
+
+To interpret this information more thoroughly, engaging issues of mask-wearing behavior, social-distancing, vaccines, the overall socioeconomic landscape, etc, is outside the scope of this analysis.
+
+## Code
 ```{r, echo=FALSE, warning=FALSE , message=FALSE, results=FALSE}
 library(rmarkdown)
-library(data.table)
 library(broom)
+library(data.table)    # for fread()
 library(tidyverse)
-library(ggdark)
+library(ggdark)        # for dark_theme_gray()
+library(stats)         # for weighted.mean()
 ```
 
 #### Import and clean data
@@ -77,7 +153,7 @@ library(ggdark)
 # pathVote <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/vote/Harvard/countypres_2000-2020.csv"
 # pathPop <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/countyData/USDA_PopulationData/PopEst2019.csv"
 
-pathRona <- "./data/rona/NYT/us-counties_panel_2021-08-02.csv"
+pathRona <- "./data/rona/NYT/us-counties_2021-08-09.csv"
 pathVote <- "./data/vote/Harvard/countypres_2000-2020.csv"
 pathPop <- "./data/countyData/USDA_PopulationData/PopEst2019.csv"
 
@@ -204,9 +280,9 @@ ronaSectionsTot <- ronaSectionsTot_BeforeCleaning %>%
 <hr>
 #### Calculate Summary Data
 ```{r}
-# Calculate a column for COVID-cases-per-capita.
-ronaPerCap <- ronaSectionsTot %>%
-    mutate(across(starts_with("T", ignore.case=FALSE), function(x) {x/pop2019} ))
+# Calculate a column for COVID-cases-per-1000-population.
+ronaPer1000 <- ronaSectionsTot %>%
+    mutate(across(starts_with("T", ignore.case=FALSE), function(x) {x*1000/pop2019} ))
 
 # Remove unused variables
 rm(rawData) #, ronaTall, ronaSectionsTot)
@@ -222,20 +298,19 @@ ronaTotalUSA <- ronaSectionsTot %>%
   select(starts_with("T", ignore.case=FALSE)) %>%
   colSums()
 
-# Calc USA Aggregate COVID Data
-ronaPerCapUSA <- ronaTotalUSA / nationalSummaries["pop2019"]
+# Calc USA Aggregate COVID Data Per-1000 Population
+ronaPer1000USA <- ronaTotalUSA * 1000 / nationalSummaries["pop2019"] 
 
 ```
 
-<hr>
-#### Regress
+<hr> #### Regress
 ```{r}
-# Regress COVID cases-per-capita on election data
+# Regress COVID cases-per-1000 on election data
     # One regression for each week
     # Each regression across the cross-section of FIPS counties
-lm_allT <-  map(select(ronaPerCap, starts_with("T", ignore.case=FALSE)), 
+lm_allT <-  map(select(ronaPer1000, starts_with("T", ignore.case=FALSE)), 
                        function(yvar) {
-                         lm(yvar ~ DJT_Margin, ronaPerCap)
+                         lm(yvar ~ DJT_Margin, ronaPer1000, weights = pop2019)
                          })
 
 # Tidy regression coefficients and other statistical output.
@@ -250,8 +325,7 @@ lm_dfT <- as.data.frame(do.call(rbind, lm_outT))
 colnames(lm_dfT) <- c("BetaCoeff", "RSquared", "PValue")
 ```
 
-<hr>
-#### Make Regression Output Summary Tables
+<hr> #### Calculate Regression Output Summary Tables
 ```{r}
 # Join additional columns for analysis
 timeSeriesResults <- lm_dfT %>% 
@@ -265,69 +339,81 @@ timeSeriesResults <- lm_dfT %>%
 timeSeriesResults <- 
   timeSeriesResults[c("BetaCoeff", "ronaTotalUSA", "RSquared", "PValue", "weekDate")]
 
-rm(lm_allT, lm_outT, lm_dfT)
+rm(lm_outT, lm_dfT) # lm_allT, 
 ```
 
-<hr>
-### Plot Coefficients Over Time
-```{r echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
-title_ = "Magnitude of Coefficients Over Time"
-subtitle_ = "(Between Percap COVID and 2020 Vote Margin Across USA Counties)"
-caption_ = paste(
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# TIME SERIES COEFFICIENT PLOT
+ts_title = "Magnitude of Coefficients Over Time"
+ts_subtitle = "(Between Per-100k COVID and 2020 Vote Margin Across USA Counties)"
+ts_caption = paste(
   "Each data point is a regression coefficient,\n",
-  "at a particular week, across all USA FIPS counties, between:\n",
-  "per-capita cumulative COVID cases, and\n",
-  "the 2020 vote margin.\n\n",
-  "A coefficient of +0.01 means that:\n",
+  "at a particular week, across all USA FIPS counties,\n",
+  "via population-weighted least-squares regression, between:\n",
+  "per-1,000-population cumulative COVID cases, and\n",
+  "the 2020 vote margin.\n",
+  "A coefficient of +10 means that:\n",
   "an increase of +.01 in vote margin (+Republican) would correlate with\n",
-  "an increase of +1 COVID case per 10,000 population.")
+  "an increase of +10 COVID cases per 100,000 population.")
+
+# CROSS-SECTION SCATTER PLOTS WITH REGRESSION
+xs_dates = c("T2020_08_09", "T2020_11_01", "T2021_08_08")
+xs_title = "Scatter-plot and Trend on " # add date here 
+xs_subtitle = "(Population-Weighted Regression of Cumulative Covid Cases-Per-100,000 on Vote-margin)"
+
 ```
 
-```{r fig.align='center', warning=FALSE, message=FALSE}
-Margin_vs_CovidPerCap <- timeSeriesResults %>% 
+<hr> #### Plot Cross-Section Scatterplot and Regression Line
+```{r fig.align='center', warning=FALSE, message=FALSE, fig.show='hide'}
+weekDates_ <- column_to_rownames(weekDates, var="week_DateT")
+i <- 2
+  chart_date <- xs_dates[[i]]
+  lm_fit <- lm_allT[[{chart_date}]]
+  predicted_df <- data.frame(
+    casesPer1000_pred = predict(lm_fit, ronaPer1000), 
+    DJT_Margin       = ronaPer1000$DJT_Margin,
+    pop2019          = ronaPer1000$pop2019)
+  
+  xs_plot <- ronaPer1000 %>%
+    {ggplot(., aes(y=get(chart_date), x=DJT_Margin, size=pop2019)) + 
+      geom_point(alpha=0.1) + 
+      labs(title=paste(xs_title, weekDates_[chart_date,]), subtitle=xs_subtitle,
+           caption=paste("Population-Weighted Regression Beta Coefficient =", 
+                         signif(timeSeriesResults[{{chart_date}}, "BetaCoeff"], digits=3),
+                         "COVID Cases / 100,000 Pop. / +1% Vote Margin")) +
+      xlab("Vote Margin (+ is Republican)") + ylab("Cumulative COVID Cases Per 1000 Population") +
+      geom_hline(yintercept=weighted.mean(.[,{{chart_date}}], .[,"pop2019"]), size=0.1) +
+      geom_vline(xintercept=weighted.mean(.[,"DJT_Margin"], .[,"pop2019"]), size=0.1) +
+      geom_smooth(data = predicted_df, 
+                  aes(x=DJT_Margin, y=casesPer1000_pred), 
+                  color='red', show.legend = FALSE)
+    } 
+xs_plot + dark_theme_gray()
+
+```
+<hr> #### Plot Coefficients Over Time
+```{r fig.align='center', warning=FALSE, message=FALSE, results=FALSE, fig.show='hide'}
+
+ts_plot <- timeSeriesResults %>% 
     ggplot(aes(x=weekDate, 
                y=BetaCoeff)) +
-        labs(title=title_, subtitle=subtitle_, caption=caption_) +
+        labs(title=ts_title, subtitle=ts_subtitle, caption=ts_caption) +
         xlab("Date") + ylab("Regression Coefficient") +
-        scale_y_continuous(limits=c(-.01, .02)) +
+        scale_y_continuous(limits=c(-10, 20)) +
         geom_hline(yintercept = 0, linetype = "solid", color = "white", size = .5) +
         geom_point(aes(color=BetaCoeff)) +
         scale_colour_gradient(low="#0000ff", high="#ff0000", guide=FALSE)
 
-Margin_vs_CovidPerCap + dark_theme_gray()
+ts_plot + dark_theme_gray()
 ```
 
-<hr>
-
-### Discussion
-
-#### Overview
-Each plotted point on the graph is a cross-section regression coefficient, taken at a point in time. It measures a correlation at that time across the cross-section of all USA FIPS counties, and this is done every week.
-
-The coefficient measures correlation between:
- * per-capita cumulative COVID cases, and
- * the 2020 presidential election vote margin.
-
-Of course, the 2020 vote margin doesn't change, only the cumulative count of COVID cases can change. And, the cumulative counts can never decrease, by definition. When a trend appears, such as counties that voted more-Republican having suffered more cumulative COVID cases, then the coefficient will increase with that trend.
-
-Note that the coefficient was negative in early 2020, when counties that voted more-Democrat initially experienced greater vulnerability to the virus.  Then that switched to the opposite in Fall 2020. 
-
-#### Maximum and minimum values
-The maximum correlation of Democratic areas and cumulative severity of COVID occurred at a level of -.008 during the second week of August 2020. That is, +8 COVID cases per 100,000 population per percentage point of Democrat vote margin.  By the second week of November, the Democratic and Republican areas had accumulated balanced counts, at the moment of the election. The maximum correlation of Republican areas with cumulative COVID cases occurred in the second or third week of January 2021 at .017, or 17 cases per 100,000 population per percentage point of vote margin.
-
-<hr>
-### Magnitudes in Context
-First, we need a table of summary statistics of the USA:
-```{r}
-nationalSummaries
-```
-Next, here is a table of the key max and min values from the regression tables, as well as the most recent coefficient.
+<hr> #### Table of Regression Coefficients
 ```{r}
 maxMinTable <- timeSeriesResults %>% 
   slice(c(
     which.min(BetaCoeff),
-    which.max(BetaCoeff),
     which.min(abs(BetaCoeff)),
+    which.max(abs(BetaCoeff)),
     n()
     )) %>%
   mutate(across(c("BetaCoeff", "ronaTotalUSA", "RSquared", "PValue"), ~ signif(.x, digits=3)))
@@ -340,29 +426,24 @@ rownames(maxMinTable) <-
 maxMinTable
 ```
 
-<hr>
-### Interpreting the Magnitude of Coefficients
-A coefficient of +.01 naively implies that an change of 1 in the vote margin correlates with an increase in .01 cases per population. But, the vote margin is only relevant in smaller increments, so let's divide by 100.
-
-So, a coefficient of +0.01 means that an increase of +.01 in vote margin (+ defined as + Republican), would correlate with an increase of +1 COVID case per 10,000 population. This "increase" is not happening over time, it is a way of making an incremental comparison between different counties in the cross-section.
-
-Thus, we can say that a correlation of .01 implies that an increase of .01 in vote margin correlates with one additional COVID case per 10,000 population.
-
-Consider an example county with 10,000 Americans, including 5,000 voters, and presume a coefficient of +.01, where Republican votes correlate with more COVID cases.
-
-If the county were to hypothetically move along this margin such that there were 25 more Republican voters and 25 fewer Democrat voters, then that would increase the margin by +.01, corresponding to one additional case in the county.
 
 <hr>
-### Correlation, Causality, and References
-For now, I must leave it to epidemiologists to publicly cast judgement on how to draw correct inference from this correlation.
+## References
 
 This correlation [has](https://www.nytimes.com/interactive/2021/04/17/us/vaccine-hesitancy-politics.html) been [reported](https://www.npr.org/sections/health-shots/2020/11/06/930897912/many-places-hard-hit-by-covid-19-leaned-more-toward-trump-in-2020-than-2016)  since even [before](https://www.washingtonpost.com/politics/2021/07/27/rate-new-infections-is-about-twice-high-red-counties-blue-counties/) the election, but I hope you found this presentation interesting and relevant.
 
 <hr>
-### Additional Analysis
+## Additional Analysis
+#### TODO
+ * Get updated 2020 census data
  * Plot similar graphs for within-states and between-states coefficients over time.
- * Redo analysis using per-100,000 statistics instead of per-capita
- * Put magnitude of effect in context of aggregate figures
+ * Make a table of OLS / WLS figures
+ 
+#### DONE
+ * Weighted regression DONE
+ * Redo analysis using per-100,000 statistics instead of per-capita DONE
+ * Bubble chart of cross sections at the four points with trendline DONE
+ * Put magnitude of effect in context of aggregate figures DONE
 
 <!--
 # if .005 of voters switch their vote, that's a +.01 margin
@@ -394,5 +475,9 @@ This correlation [has](https://www.nytimes.com/interactive/2021/04/17/us/vaccine
 # RUN THESE TO CLEAR LOCAL DATA BUILDING UP IN R WORKSPACE
 # rm(list = ls())
 # .rs.restartR()
-
 -->
+
+
+<!-- Consider an example county with 100,000 Americans, including 50,000 voters, and a coefficient of +20, where areas that voted more-Republican tend to have accumulated more COVID cases. -->
+
+<!-- If the county were to hypothetically move along this margin such that there were 2,500 more Republican votes and 2,500 fewer Democrat votes, then that would increase the margin by +0.10, corresponding to +200 additional cases in the county. While that sounds like a lot, and would matter to those people, it's a relatively small magnitude.  -->
