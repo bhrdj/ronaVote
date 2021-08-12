@@ -11,10 +11,7 @@ output:
 ---
 
 <style type="text/css">
-*{
-  margin: 0;
-  padding: 0;
-}
+
 h1.title {
   padding-top: 2em;
   text-align: center;
@@ -147,7 +144,7 @@ library(tidyverse)
 library(ggdark)        # for dark_theme_gray()
 library(stats)         # for weighted.mean()
 ```
-#### Import and clean data
+<hr> #### Import and clean data
 ```{r}
 # pathRona <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
 # pathVote <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/vote/Harvard/countypres_2000-2020.csv"
@@ -195,8 +192,7 @@ weekDates <- distinct(ronaTall, week_DateT, weekDate)
 fips_fipsText <- distinct(ronaTall, fips, fipsText, .keep_all = FALSE)
 ```
 
-<hr>
-#### Tidy data
+<hr> #### Tidy data
 ```{r}
 # Tidy election data:
     # Widen -> 
@@ -431,8 +427,10 @@ maxMinTable
 ## References
 
 #### Sources for raw data
-- The New York Times. (2021). Coronavirus (Covid-19) Data in the United States. Retrieved [Insert Date Here], from https://github.com/nytimes/covid-19-data.
-- MIT Election Data and Science Lab, 2018, "County Presidential Election Returns 2000-2020", https://doi.org/10.7910/DVN/VOQCHQ, Harvard Dataverse, V9, UNF:6:qSwUYo7FKxI6vd/3Xev2Ng== [fileUNF] 
+- The New York Times. (2021). Coronavirus (Covid-19) Data in the United States. 
+    - Retrieved [Insert Date Here], from https://github.com/nytimes/covid-19-data.
+- MIT Election Data and Science Lab, 2018, "County Presidential Election Returns 2000-2020",
+    - https://doi.org/10.7910/DVN/VOQCHQ, Harvard Dataverse, V9, UNF:6:qSwUYo7FKxI6vd/3Xev2Ng== [fileUNF] 
 - USDA Population estimates for the U.S., States, and counties, 2010-19.
     - "These data were posted to the ERS website (at https://www.ers.usda.gov/data-products/county-level-data-sets/download-data.aspx) May 2020. Contact: John Cromartie, ERS/USDA, john.cromartie@usda.gov, (816) 994-4302."
 
