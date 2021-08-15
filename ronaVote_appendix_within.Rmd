@@ -170,8 +170,9 @@ stateOrRegions_only <- ronaPer1000_byStateOrRegion %>%
   distinct()
 
 regressEachWeekCol <- function(df){
-  df <- ronaPer1000_byStateOrRegion %>%
-    filter(stateOrRegion == "New_England")
+
+    # df <- ronaPer1000_byStateOrRegion %>%
+    # filter(stateOrRegion == "New_England")
   
   x <- map(select(df, starts_with("T", ignore.case=FALSE)), 
               function(yvar) {
@@ -185,7 +186,7 @@ regressEachWeekCol <- function(df){
                       r2_coeff = glance(an_lm)$r.squared,
                       pVal_coeff = glance(an_lm)$p.value )
                })
-  
+  rm(df, x)
   return(lm_outT)
 }
 
