@@ -105,17 +105,19 @@ summaries_ByState <- ronaPer1000 %>%
             state_pop = sum(pop2019)
             )
 
-gg_obj <- 
+plot_byState <- 
   ggplot(summaries_ByState, 
        aes(x = county_counts, y = mean_margin, size=state_pop)
        ) +
-  labs(title="Vote-Margin and Number-Of-Counties, by StateOrRegion", 
+  labs(title="Vote-Margin and Number-Of-Counties, by State", 
     caption=""
     ) +
   geom_point_interactive(aes(tooltip = state), alpha=0.5) +
   dark_theme_gray()
 
-girafe(code = print(gg_obj), width_svg = 8, height_svg = 4)
+rm(summaries_ByState)
+
+girafe(code = print(plot_byState), width_svg = 8, height_svg = 4)
 
 ```
 
@@ -144,7 +146,7 @@ summaries_ByStateOrRegion <- ronaPer1000 %>%
             state_pop = sum(pop2019),
             )
 
-gg_obj2 <- 
+plot_byStateOrRegion <- 
   ggplot(summaries_ByStateOrRegion, 
        aes(x = county_counts, y = mean_margin, size=state_pop)
        ) +
@@ -155,7 +157,9 @@ gg_obj2 <-
   geom_point_interactive(aes(tooltip = stateOrRegion), alpha=0.5) +
   dark_theme_gray()
 
-girafe(code = print(gg_obj2), width_svg = 8, height_svg = 4)
+rm(summaries_ByStateOrRegion)
+
+girafe(code = print(plot_byStateOrRegion), width_svg = 8, height_svg = 4)
 ```
 
 ## Run "within" regressions
@@ -163,75 +167,81 @@ girafe(code = print(gg_obj2), width_svg = 8, height_svg = 4)
 ```{r eval=TRUE}
 ronaPer1000_byStateOrRegion <- ronaPer1000 %>%
   left_join(fips_stateOrRegion, by="fips") %>%
-  arrange(stateOrRegion) %>%
+  arrange(desc(stateOrRegion)) %>%
   select(-c(state))
 
-stateOrRegions_only <- ronaPer1000_byStateOrRegion %>% 
-  distinct()
+stateOrRegions_only <- ronaPer1000_byStateOrRegion$stateOrRegion %>% 
+  unique() 
 
-regressEachWeekCol <- function(df){
-
-    # df <- ronaPer1000_byStateOrRegion %>%
-    # filter(stateOrRegion == "New_England")
+regressEachWeekCol <- function(df, sR){
   
-  x <- map(select(df, starts_with("T", ignore.case=FALSE)), 
-              function(yvar) {
-                lm(yvar ~ DJT_Margin, df, weights = pop2019)
+  # sR <- "TX"
+  # df <- ronaPer1000_byStateOrRegion %>% filter(stateOrRegion == sR)
+  
+  lmOut_raw <- map(select(df, starts_with("T", ignore.case=FALSE)), 
+              function(cas_per_1000) {
+                lm(cas_per_1000 ~ DJT_Margin, df, weights = pop2019)
                 })
   
-  lm_outT <- map(x, 
+  lmOut_stats_list <- map(lmOut_raw, 
                function(an_lm) {
-                   c( coeff = tidy(an_lm)$estimate[2], 
+                   c( 
+                      coeff = tidy(an_lm)$estimate[2], 
                       y_intercept = tidy(an_lm)$estimate[1], 
-                      r2_coeff = glance(an_lm)$r.squared,
-                      pVal_coeff = glance(an_lm)$p.value )
-               })
-  rm(df, x)
-  return(lm_outT)
+                      pVal_coeff = tidy(an_lm)$p.value[2], 
+                      pVal_intercept = tidy(an_lm)$p.value[1], 
+                      r2 = glance(an_lm)$r.squared
+                   )})
+  
+  lmOut_stats_df <- as.data.frame(do.call(rbind, lmOut_stats_list)) %>%
+    mutate(stateRegion = sR) %>%
+    rownames_to_column(var = "week_DateT")
+
+  return(lmOut_stats_df)
 }
 
+lmOut_stateOrRegion <- list()
+for (sR in stateOrRegions_only) {
+  lmOut_stateOrRegion[[sR]] <- ronaPer1000_byStateOrRegion %>% 
+    filter(stateOrRegion == sR) %>%
+    regressEachWeekCol(sR)
+}
 
-x <- ronaPer1000_byStateOrRegion %>%
-  nest_by(stateOrRegion) %>%
-  mutate(eachWeekRegLists = list(map(.[[2]], regressEachWeekCol)))
-
-
+# EXPORT TO .RData
+myVec <- ls()[!ls() %in% c("lmOut_stateOrRegion",
+                           "weekDates",
+                           "stateOrRegions_only")]
+rm(list = myVec)
 
 ```
 
-```{r eval=FALSE}
-lm_allT <-  map(select(ronaPer1000_byStateOrRegion, starts_with("T", ignore.case=FALSE)), 
-              function(yvar) {
-                lm(yvar ~ DJT_Margin, ronaPer1000_byStateOrRegion, weights = pop2019)
-                })
+```{r}
+lmOut_betaCoeffs <- bind_rows(lmOut_stateOrRegion, .id = "column_label") %>%
+  inner_join(weekDates, by = "week_DateT") %>%
+  mutate(ronaVoteTrend = ifelse(pVal_coeff < .05 & coeff > 0, "red", 
+                       ifelse(pVal_coeff < .05 & coeff < 0, "blue", NA))
+         ) 
 
+signif_plot <- lmOut_betaCoeffs %>%
+  ggplot(aes(x=weekDate, y=stateRegion, color=ronaVoteTrend)) +
+  geom_point() +
+  scale_colour_manual(values = c("red" = "red", "blue" = "blue"))
+   
 
-listOfStatesOrRegions_listOfWeeklyRegressions <- ronaPer1000_byStateOrRegion %>%
-  group_by(stateOrRegion) %>%
-  nest() %>%
-  mutate(model = map())
+  
+  
+  
+  
   
 
-
-
-lm_allT <-  map(select(ronaPer1000_byStateOrRegion, starts_with("T", ignore.case=FALSE)), 
-              function(yvar) {
-                lm(yvar ~ DJT_Margin, ronaPer1000_byStateOrRegion, weights = pop2019)
-                })
-
-# Tidy regression coefficients and other statistical output.
-lm_outT <- map(lm_allT, 
-               function(an_lm) {
-                   c( tidy(an_lm)$estimate[2], 
-                      glance(an_lm)$r.squared,
-                      glance(an_lm)$p.value )
-               })
-
-lm_dfT <- as.data.frame(do.call(rbind, lm_outT))
-colnames(lm_dfT) <- c("BetaCoeff", "RSquared", "PValue")
-weekDates_ <- column_to_rownames(weekDates, var="week_DateT")
+  
+  
 
 ```
+
+
+
+
 
 ```{r eval=FALSE}
 
