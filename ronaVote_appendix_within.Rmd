@@ -172,17 +172,20 @@ stateOrRegions_only <- ronaPer1000_byStateOrRegion %>%
 regressEachWeekCol <- function(df){
   df <- ronaPer1000_byStateOrRegion %>%
     filter(stateOrRegion == "New_England")
+  
   x <- map(select(df, starts_with("T", ignore.case=FALSE)), 
               function(yvar) {
                 lm(yvar ~ DJT_Margin, df, weights = pop2019)
                 })
+  
   lm_outT <- map(x, 
                function(an_lm) {
                    c( coeff = tidy(an_lm)$estimate[2], 
                       y_intercept = tidy(an_lm)$estimate[1], 
-                      r2_coeff = glance(an_lm)$r.squared[2],
-                      pVal_coeff = glance(an_lm)$p.value[2] )
+                      r2_coeff = glance(an_lm)$r.squared,
+                      pVal_coeff = glance(an_lm)$p.value )
                })
+  
   return(lm_outT)
 }
 
