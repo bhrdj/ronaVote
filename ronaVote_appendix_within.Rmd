@@ -78,6 +78,7 @@ This is a literate-code walkthrough of the data exploration process, leaving the
 #### Libraries and Startup
 ```{r warning=FALSE , message=FALSE}
 library(tidyverse)
+library(broom)
 library(rmarkdown)
 library(ggdark)       # for dark_theme_gray()
 library(stats)        # for weighted.mean()
@@ -165,16 +166,24 @@ ronaPer1000_byStateOrRegion <- ronaPer1000 %>%
   arrange(stateOrRegion) %>%
   select(-c(state))
 
-stateOrRegions_only <- ronaPer1000_byStateOrRegion %>%
-  select(stateOrRegion) %>%
+stateOrRegions_only <- ronaPer1000_byStateOrRegion %>% 
   distinct()
 
 regressEachWeekCol <- function(df){
-  print(df)
-  map(select(df, starts_with("T", ignore.case=FALSE)), 
+  df <- ronaPer1000_byStateOrRegion %>%
+    filter(stateOrRegion == "New_England")
+  x <- map(select(df, starts_with("T", ignore.case=FALSE)), 
               function(yvar) {
                 lm(yvar ~ DJT_Margin, df, weights = pop2019)
                 })
+  lm_outT <- map(x, 
+               function(an_lm) {
+                   c( coeff = tidy(an_lm)$estimate[2], 
+                      y_intercept = tidy(an_lm)$estimate[1], 
+                      r2_coeff = glance(an_lm)$r.squared[2],
+                      pVal_coeff = glance(an_lm)$p.value[2] )
+               })
+  return(lm_outT)
 }
 
 
@@ -191,11 +200,6 @@ lm_allT <-  map(select(ronaPer1000_byStateOrRegion, starts_with("T", ignore.case
               function(yvar) {
                 lm(yvar ~ DJT_Margin, ronaPer1000_byStateOrRegion, weights = pop2019)
                 })
-
-
-
-
-
 
 
 listOfStatesOrRegions_listOfWeeklyRegressions <- ronaPer1000_byStateOrRegion %>%
