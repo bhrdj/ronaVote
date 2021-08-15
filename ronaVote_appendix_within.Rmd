@@ -85,6 +85,8 @@ library(ggiraph)      # for tooltip highlighting
 
 rm(list=ls())
 load("./temp_workspace/rona.RData")
+rm(ronaSectionsTot)
+
 ```
 
 ## Do the states have enough counties to run "within" regressions?
@@ -160,11 +162,15 @@ girafe(code = print(gg_obj2), width_svg = 8, height_svg = 4)
 ```{r eval=TRUE}
 ronaPer1000_byStateOrRegion <- ronaPer1000 %>%
   left_join(fips_stateOrRegion, by="fips") %>%
+  arrange(stateOrRegion) %>%
   select(-c(state))
 
-rm(ronaSectionsTot, fips_stateOrRegion)
+stateOrRegions_only <- ronaPer1000_byStateOrRegion %>%
+  select(stateOrRegion) %>%
+  distinct()
 
 regressEachWeekCol <- function(df){
+  print(df)
   map(select(df, starts_with("T", ignore.case=FALSE)), 
               function(yvar) {
                 lm(yvar ~ DJT_Margin, df, weights = pop2019)
@@ -173,14 +179,9 @@ regressEachWeekCol <- function(df){
 
 
 x <- ronaPer1000_byStateOrRegion %>%
-  group_by(stateOrRegion) %>%
-  nest() %>%
-  mutate(listOfWeekRegressions = map(data, regressEachWeekCol))
+  nest_by(stateOrRegion) %>%
+  mutate(eachWeekRegLists = list(map(.[[2]], regressEachWeekCol)))
 
-d %>% 
-  group_by(state) %>% 
-  nest() %>% 
-  mutate(model = map(data, ~lm(response ~ year, data = .)))
 
 
 ```
