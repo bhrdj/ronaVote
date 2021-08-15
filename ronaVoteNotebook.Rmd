@@ -283,6 +283,10 @@ ronaPer1000 <- ronaSectionsTot %>%
 # Remove unused variables
 rm(rawData) #, ronaTall, ronaSectionsTot)
 
+# For exporting .RData:
+# myVec <- ls()[!ls() %in% c("ronaPer1000", "ronaSectionsTot", "weekDates")]
+# rm(list = myVec)
+
 # Calc national summary data
 nationalSummaries <- ronaSectionsTot %>%
   select(c("pop2019", "totalvotes", "REPUBLICAN", "DEMOCRAT")) %>%
@@ -422,6 +426,10 @@ rownames(maxMinTable) <-
 maxMinTable
 ```
 
+<hr> ## Appendix: Within States and Between States Analysis
+
+(forthcoming)
+
 
 <hr>
 ## References
@@ -442,8 +450,11 @@ This correlation [has](https://www.nytimes.com/interactive/2021/04/17/us/vaccine
 <hr>
 ## Additional Analysis
 #### TODO
- * Get updated 2020 census data
  * Plot similar graphs for within-states and between-states coefficients over time.
+ * Redo entire code using group_by instead of pivot_wider
+ * timeSeriesResults is haphazardly left in there
+ * Plot cases per 100,000 (cumulative and weekly-average-daily-rate) vertically-integrated
+ * Get updated 2020 census data
  * Make a table of OLS / WLS figures
  
 #### DONE
@@ -482,5 +493,7 @@ This correlation [has](https://www.nytimes.com/interactive/2021/04/17/us/vaccine
 # RUN THESE TO CLEAR LOCAL DATA BUILDING UP IN R WORKSPACE
 # rm(list = ls())
 # .rs.restartR()
+
+
 -->
 

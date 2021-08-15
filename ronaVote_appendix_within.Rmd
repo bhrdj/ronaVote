@@ -1,0 +1,264 @@
+---
+title: "ronaVote Appendix: Within"
+subtitle: "Literate Data Exploration: Checking the ronaVote Regression Using Within-States Variation"
+
+author: "Steven Bhardwaj"
+date: "Posted 2021-08-13, Updated 2021-08-13"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    theme:
+      bootswatch: darkly
+    code_folding: hide
+---
+
+<style type="text/css">
+
+h1.title {
+  padding-top: 2em;
+  text-align: center;
+}
+h3.subtitle {
+  text-align: center;
+}
+h4.author {
+  font-size: 1em;
+  text-align: center;
+}
+h4.date {
+  font-size: 1em;
+  text-align: center;
+}
+
+#homeLink {
+  font-size: 1.5em;
+  color: #CCCCCC !important;
+  opacity: 1;
+  width: 5em;
+	height: 1.2em;
+  position: absolute;
+  top: 3%;
+  left: 50%;
+  transform: translate(-50%, 0%);
+}
+hr{
+  height: 1px;
+  background-color: #FFF;
+  border: none;
+}
+.center_plots {
+  font-size: 1em;
+  text-align: center;
+  margin: auto;
+  width: 70%;
+}
+.width_auto {
+  margin: auto;
+  width: 100%;
+}
+</style>
+
+
+<div id="homeLink"><a href="../index.html"><p align="center">
+bhrdwj.net
+<br>
+潘
+</p></a></div>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# class.source="fold-show"
+```
+
+## Summary
+This is a literate-code walkthrough of the data exploration process, leaving the resulting charts at the end.
+
+#### Libraries and Startup
+```{r warning=FALSE , message=FALSE}
+library(tidyverse)
+library(rmarkdown)
+library(ggdark)       # for dark_theme_gray()
+library(stats)        # for weighted.mean()
+library(ggiraph)      # for tooltip highlighting
+
+rm(list=ls())
+load("./temp_workspace/rona.RData")
+```
+
+## Do the states have enough counties to run "within" regressions?
+
+```{r warning=FALSE , message=FALSE}
+
+ronaPer1000 %>% count()
+
+# group_by states
+# regress, tidy, plot all-on-one graph (geom_line instead of geom_point)
+summaries_ByState <- ronaPer1000 %>% 
+  group_by(state) %>%
+  summarize(mean_margin = weighted.mean(DJT_Margin, pop2019),
+            county_counts = n(),
+            state_pop = sum(pop2019)
+            )
+
+gg_obj <- 
+  ggplot(summaries_ByState, 
+       aes(x = county_counts, y = mean_margin, size=state_pop)
+       ) +
+  labs(title="Vote-Margin and Number-Of-Counties, by StateOrRegion", 
+    caption=""
+    ) +
+  geom_point_interactive(aes(tooltip = state), alpha=0.5) +
+  dark_theme_gray()
+
+girafe(code = print(gg_obj), width_svg = 8, height_svg = 4)
+
+```
+
+Most states have enough counties, but some have too few. I will combine states with fewer than 25 counties with other contiguous states into a few "regions".
+
+```{r}
+
+fips_stateOrRegion <- ronaPer1000 %>%
+  mutate(newEngland = state %in% c("NH", "VT", "RI", "MA", "ME", "CT")) %>%
+  mutate(AZ_NV = state %in% c("AZ", "NV")) %>%
+  mutate(WY_UT = state %in% c("WY", "UT")) %>%
+  mutate(DE_MD_NJ = state %in% c("DE", "MD", "NJ")) %>%
+  mutate(stateOrRegion = ifelse(newEngland, "New_England", state)) %>%
+  mutate(stateOrRegion = ifelse(AZ_NV, "AZ_NV", stateOrRegion)) %>%
+  mutate(stateOrRegion = ifelse(WY_UT, "WY_UT", stateOrRegion)) %>%
+  mutate(stateOrRegion = ifelse(DE_MD_NJ, "DE_MD_NJ", stateOrRegion)) %>%
+  select(c(stateOrRegion, fips))
+
+summaries_ByStateOrRegion <- ronaPer1000 %>% 
+  left_join(fips_stateOrRegion, by="fips") %>%
+  filter(! state %in% c("AK", "HI")) %>%
+  select(-c(state)) %>%
+  group_by(stateOrRegion) %>%
+  summarize(mean_margin = weighted.mean(DJT_Margin, pop2019),
+            county_counts = n(),
+            state_pop = sum(pop2019),
+            )
+
+gg_obj2 <- 
+  ggplot(summaries_ByStateOrRegion, 
+       aes(x = county_counts, y = mean_margin, size=state_pop)
+       ) +
+  xlim(0, NA) +
+  labs(title="Vote-Margin and Number-Of-Counties, by StateOrRegion", 
+    caption=""
+    ) +
+  geom_point_interactive(aes(tooltip = stateOrRegion), alpha=0.5) +
+  dark_theme_gray()
+
+girafe(code = print(gg_obj2), width_svg = 8, height_svg = 4)
+```
+
+## Run "within" regressions
+
+```{r eval=TRUE}
+ronaPer1000_byStateOrRegion <- ronaPer1000 %>%
+  left_join(fips_stateOrRegion, by="fips") %>%
+  select(-c(state))
+
+rm(ronaSectionsTot, fips_stateOrRegion)
+
+regressEachWeekCol <- function(df){
+  map(select(df, starts_with("T", ignore.case=FALSE)), 
+              function(yvar) {
+                lm(yvar ~ DJT_Margin, df, weights = pop2019)
+                })
+}
+
+
+x <- ronaPer1000_byStateOrRegion %>%
+  group_by(stateOrRegion) %>%
+  nest() %>%
+  mutate(listOfWeekRegressions = map(data, regressEachWeekCol))
+
+d %>% 
+  group_by(state) %>% 
+  nest() %>% 
+  mutate(model = map(data, ~lm(response ~ year, data = .)))
+
+
+```
+
+```{r eval=FALSE}
+lm_allT <-  map(select(ronaPer1000_byStateOrRegion, starts_with("T", ignore.case=FALSE)), 
+              function(yvar) {
+                lm(yvar ~ DJT_Margin, ronaPer1000_byStateOrRegion, weights = pop2019)
+                })
+
+
+
+
+
+
+
+listOfStatesOrRegions_listOfWeeklyRegressions <- ronaPer1000_byStateOrRegion %>%
+  group_by(stateOrRegion) %>%
+  nest() %>%
+  mutate(model = map())
+  
+
+
+
+lm_allT <-  map(select(ronaPer1000_byStateOrRegion, starts_with("T", ignore.case=FALSE)), 
+              function(yvar) {
+                lm(yvar ~ DJT_Margin, ronaPer1000_byStateOrRegion, weights = pop2019)
+                })
+
+# Tidy regression coefficients and other statistical output.
+lm_outT <- map(lm_allT, 
+               function(an_lm) {
+                   c( tidy(an_lm)$estimate[2], 
+                      glance(an_lm)$r.squared,
+                      glance(an_lm)$p.value )
+               })
+
+lm_dfT <- as.data.frame(do.call(rbind, lm_outT))
+colnames(lm_dfT) <- c("BetaCoeff", "RSquared", "PValue")
+weekDates_ <- column_to_rownames(weekDates, var="week_DateT")
+
+```
+
+```{r eval=FALSE}
+
+# Join additional columns for analysis
+timeSeriesResults <- lm_dfT %>% 
+  rownames_to_column(var = "week_DateT") %>%
+  left_join(weekDates, by = "week_DateT") %>%
+  column_to_rownames("week_DateT") %>%
+  filter(weekDate > as.Date("2020-04-12"))
+
+# Reorder columns
+timeSeriesResults <- 
+  timeSeriesResults[c("BetaCoeff", "RSquared", "PValue", "weekDate")]
+
+rm(lm_outT, lm_dfT) # lm_allT, 
+
+
+```
+
+
+```{r eval=FALSE}
+ts_title <- "title"
+ts_subtitle <- "subtitle"
+ts_caption <- "caption"
+
+ts_plot <- timeSeriesResults %>% 
+    ggplot(aes(x=weekDate, 
+               y=BetaCoeff)) +
+        labs(title=ts_title, subtitle=ts_subtitle, caption=ts_caption) +
+        xlab("Date") + ylab("Regression Coefficient") +
+        scale_y_continuous(limits=c(-10, 20)) +
+        geom_hline(yintercept = 0, linetype = "solid", color = "white", size = .5) +
+        geom_point(aes(color=BetaCoeff)) +
+        scale_colour_gradient(low="#0000ff", high="#ff0000", guide=FALSE)
+
+ts_plot + dark_theme_gray()
+
+
+```
