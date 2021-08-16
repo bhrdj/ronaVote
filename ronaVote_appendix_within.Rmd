@@ -93,14 +93,11 @@ rm(ronaSectionsTot)
 ## Do the states have enough counties to run "within" regressions?
 
 ```{r warning=FALSE , message=FALSE}
-
-ronaPer1000 %>% count()
-
 # group_by states
 # regress, tidy, plot all-on-one graph (geom_line instead of geom_point)
 summaries_ByState <- ronaPer1000 %>% 
   group_by(state) %>%
-  summarize(mean_margin = weighted.mean(DJT_Margin, pop2019),
+  summarize(mean_margin = weighted.mean(DJT_Margin, (REPUBLICAN+DEMOCRAT)),
             county_counts = n(),
             state_pop = sum(pop2019)
             )
@@ -110,8 +107,8 @@ plot_byState <-
        aes(x = county_counts, y = mean_margin, size=state_pop)
        ) +
   labs(title="Vote-Margin and Number-Of-Counties, by State", 
-    caption=""
-    ) +
+       subtitle="3,104 out of 3,143 Represented in available data."
+      ) +
   geom_point_interactive(aes(tooltip = state), alpha=0.5) +
   dark_theme_gray()
 
@@ -162,22 +159,21 @@ rm(summaries_ByStateOrRegion)
 girafe(code = print(plot_byStateOrRegion), width_svg = 8, height_svg = 4)
 ```
 
-## Run "within" regressions
-
+## Setup "within" and "between" regressions
 ```{r eval=TRUE}
 ronaPer1000_byStateOrRegion <- ronaPer1000 %>%
   left_join(fips_stateOrRegion, by="fips") %>%
   arrange(desc(stateOrRegion)) %>%
+  filter(! state %in% c("AK", "HI")) %>%
   select(-c(state))
 
 stateOrRegions_only <- ronaPer1000_byStateOrRegion$stateOrRegion %>% 
   unique() 
 
-regressEachWeekCol <- function(df, sR){
-  
-  # sR <- "TX"
-  # df <- ronaPer1000_byStateOrRegion %>% filter(stateOrRegion == sR)
-  
+```
+## Function for "within" regressions
+```{r}
+regressEachWeekCol <- function(df, sR){   # sR stands for stateOrRegion
   lmOut_raw <- map(select(df, starts_with("T", ignore.case=FALSE)), 
               function(cas_per_1000) {
                 lm(cas_per_1000 ~ DJT_Margin, df, weights = pop2019)
@@ -200,6 +196,10 @@ regressEachWeekCol <- function(df, sR){
   return(lmOut_stats_df)
 }
 
+```
+## Run "within" regressions
+``` {r eval=FALSE}
+
 lmOut_stateOrRegion <- list()
 for (sR in stateOrRegions_only) {
   lmOut_stateOrRegion[[sR]] <- ronaPer1000_byStateOrRegion %>% 
@@ -210,36 +210,52 @@ for (sR in stateOrRegions_only) {
 # EXPORT TO .RData
 myVec <- ls()[!ls() %in% c("lmOut_stateOrRegion",
                            "weekDates",
-                           "stateOrRegions_only")]
+                           "stateOrRegions_only",
+                           "ronaPer1000_byStateOrRegion")]
 rm(list = myVec)
 
 ```
+## Plot "within" regressions
+```{r warning=FALSE, fig.height=8}
 
-```{r}
+load("./temp_workspace/lmOut_stateOrRegion.RData")
+
 lmOut_betaCoeffs <- bind_rows(lmOut_stateOrRegion, .id = "column_label") %>%
   inner_join(weekDates, by = "week_DateT") %>%
-  mutate(ronaVoteTrend = ifelse(pVal_coeff < .05 & coeff > 0, "red", 
-                       ifelse(pVal_coeff < .05 & coeff < 0, "blue", NA))
+  mutate(ronaVoteTrend = ifelse(pVal_coeff < .05 & coeff > 0, "Republican", 
+                       ifelse(pVal_coeff < .05 & coeff < 0, "Democrat", NA))
          ) 
 
-signif_plot <- lmOut_betaCoeffs %>%
+lmOut_betaCoeffs %>%
   ggplot(aes(x=weekDate, y=stateRegion, color=ronaVoteTrend)) +
-  geom_point() +
-  scale_colour_manual(values = c("red" = "red", "blue" = "blue"))
+  geom_point(size = 0.7) +
+  scale_colour_manual(values = c(Republican = "#BB3333", Democrat = "#3333BB")) + 
+  labs(title="Individual StateOrRegion Regression Coefficients Over Time",
+       subtitle="Significant correlations highlighted and color-coded by sign.",
+       caption=paste("State/Regions on weeks where (β>0) & (β=0 with p<0.05) have a red dot.\n",
+                     "(β<0) & (β=0 with p<0.05) have a blue dot.\n",
+                     "When (p>0.5), then no dot is plotted.")) +
+  dark_theme_gray()
    
-
-  
-  
-  
-  
-  
-
-  
-  
-
 ```
 
+## Run and plot "between" regression
+```{r}
+rm(lmOut_betaCoeffs, lmOut_stateOrRegion, myVec, fips_stateOrRegion, plot_byState, plot_byStateOrRegion, ronaPer1000)
 
+x <- ronaPer1000_byStateOrRegion %>% 
+  group_by(stateOrRegion) %>%
+  summarize(DJT_Margin = weighted.mean(DJT_Margin, (REPUBLICAN+DEMOCRAT)),
+            countyCounts_sR = n(),
+            across(starts_with("T", ignore.case=FALSE), ~ weighted.mean(., pop2019)),
+            pop2019 = sum(pop2019),
+            )
+
+xx <- regressEachWeekCol(x, 1) %>% inner_join(weekDates)
+
+ggplot(xx, aes(y=coeff, x=weekDate)) +geom_point()
+
+```
 
 
 

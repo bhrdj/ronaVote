@@ -84,7 +84,6 @@ In Spring and Summer of 2020, predominantly Democratic-voting counties suffered 
 <img src="./png/xs_2020-11-01.png">
 <br><br>
 
-
 *To date, Republican-leaning areas have accumulated more COVID overall.*
 <br><br>
 <img src="./png/xs_2021-08-08.png">
@@ -96,11 +95,38 @@ In Spring and Summer of 2020, predominantly Democratic-voting counties suffered 
 </div>
 
 <div class="center_plots">
-#### Time Series Plot of Linear Regression Coefficients
+#### Time Series Plots
 <br>
 <img  src="./png/weighted_2021-08-09.png">
 <br>
 </div>
+
+<div class="center_plots">
+<br>
+<img  src="./png/cumulative_2021-08-15.png">
+<br>
+</div>
+
+<div class="width_auto">
+<br><hr> 
+</div>
+
+
+<div class="center_plots">
+#### Within-State and Between-State Coefficient Significance Over Time
+<br>
+<img  src="./png/within_2021-08-15.png">
+<br>
+</div>
+
+<div class="center_plots">
+#### Time Series Plot of Cumulative COVID Per 1000 Population
+<br>
+<img  src="./png/within_2021-08-15.png">
+<br>
+</div>
+
+
 
 <div class="width_auto">
 <br><hr> 
@@ -284,22 +310,13 @@ ronaPer1000 <- ronaSectionsTot %>%
 rm(rawData) #, ronaTall, ronaSectionsTot)
 
 # For exporting .RData:
-# myVec <- ls()[!ls() %in% c("ronaPer1000", "ronaSectionsTot", "weekDates")]
-# rm(list = myVec)
-
-# Calc national summary data
-nationalSummaries <- ronaSectionsTot %>%
-  select(c("pop2019", "totalvotes", "REPUBLICAN", "DEMOCRAT")) %>%
-  mutate(RPlusDVotes= REPUBLICAN + DEMOCRAT) %>%
-  colSums()
+myVec <- ls()[!ls() %in% c("ronaPer1000", "ronaSectionsTot", "weekDates")]
+rm(list = myVec)
 
 # Calc USA Aggregate COVID Data
 ronaTotalUSA <- ronaSectionsTot %>%
   select(starts_with("T", ignore.case=FALSE)) %>%
   colSums()
-
-# Calc USA Aggregate COVID Data Per-1000 Population
-ronaPer1000USA <- ronaTotalUSA * 1000 / nationalSummaries["pop2019"] 
 
 ```
 
@@ -327,19 +344,23 @@ colnames(lm_dfT) <- c("BetaCoeff", "RSquared", "PValue")
 
 <hr> #### Calculate Regression Output Summary Tables
 ```{r}
+popTotalUSA <- sum(ronaPer1000$pop2019)
+
 # Join additional columns for analysis
 timeSeriesResults <- lm_dfT %>% 
   rownames_to_column(var = "week_DateT") %>%
   left_join(weekDates, by = "week_DateT") %>%
   add_column(ronaTotalUSA) %>%
+  mutate(ronaPer1000USA = ronaTotalUSA*1000/popTotalUSA) %>%
   column_to_rownames("week_DateT") %>%
   filter(weekDate > as.Date("2020-04-12"))
 
 # Reorder columns
 timeSeriesResults <- 
-  timeSeriesResults[c("BetaCoeff", "ronaTotalUSA", "RSquared", "PValue", "weekDate")]
+  timeSeriesResults[c("BetaCoeff", "ronaTotalUSA", "ronaPer1000USA",
+                      "RSquared", "PValue", "weekDate")]
 
-rm(lm_outT, lm_dfT) # lm_allT, 
+# rm(lm_outT, lm_dfT) # lm_allT, 
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -406,6 +427,21 @@ ts_plot <- timeSeriesResults %>%
 
 ts_plot + dark_theme_gray()
 ```
+
+<hr> #### Plot Cumulative Cases Over Time
+```{r fig.align='center', warning=FALSE, message=FALSE, results=FALSE, fig.show='hide'}
+
+timeSeriesResults %>%
+  select(weekDate, ronaPer1000USA) %>%
+    ggplot(aes(x=weekDate, 
+               y=ronaPer1000USA)) +
+        labs(title="USA COVID Over Time",
+             subtitle="Cumulative USA COVID Cases Per 1000 Population",
+             x="Date", y="Cases Per 1000") +
+        geom_point() + 
+        dark_theme_gray()
+```
+
 
 <hr> #### Table of Regression Coefficients
 ```{r}
