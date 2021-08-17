@@ -290,6 +290,10 @@ ronaSectionsTot <- ronaSectionsTot_BeforeCleaning %>%
       !is.na(pop2019)
       )
 
+# myVec <- ls()[!ls() %in% c("ronaSectionsTot", "weekdatesFromJan2019")]
+# rm(list = myVec)
+
+
 # STEPS TO FIX:
 #   UPDATE TO THE POPULATION DATA BASED ON THE 2020 CENSUS
 #   CHECK FOR MORE UPDATES FROM MIT/HARVARD / HOPE THEY FIX THE HOLES IN THEIR ELECTION DATA

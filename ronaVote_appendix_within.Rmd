@@ -83,6 +83,7 @@ library(rmarkdown)
 library(ggdark)       # for dark_theme_gray()
 library(stats)        # for weighted.mean()
 library(ggiraph)      # for tooltip highlighting
+library(directlabels) # for plot labeling, on within between graph
 
 rm(list=ls())
 load("./temp_workspace/rona.RData")
@@ -133,6 +134,10 @@ fips_stateOrRegion <- ronaPer1000 %>%
   mutate(stateOrRegion = ifelse(DE_MD_NJ, "DE_MD_NJ", stateOrRegion)) %>%
   select(c(stateOrRegion, fips))
 
+stateOrRegions_only <- fips_stateOrRegion$stateOrRegion %>% 
+  unique() 
+
+
 summaries_ByStateOrRegion <- ronaPer1000 %>% 
   left_join(fips_stateOrRegion, by="fips") %>%
   filter(! state %in% c("AK", "HI")) %>%
@@ -161,14 +166,13 @@ girafe(code = print(plot_byStateOrRegion), width_svg = 8, height_svg = 4)
 
 ## Setup "within" and "between" regressions
 ```{r eval=TRUE}
-ronaPer1000_byStateOrRegion <- ronaPer1000 %>%
+ronaPer1000_withStateOrRegion <- ronaPer1000 %>%
   left_join(fips_stateOrRegion, by="fips") %>%
   arrange(desc(stateOrRegion)) %>%
   filter(! state %in% c("AK", "HI")) %>%
   select(-c(state))
 
-stateOrRegions_only <- ronaPer1000_byStateOrRegion$stateOrRegion %>% 
-  unique() 
+
 
 ```
 ## Function for "within" regressions
@@ -197,34 +201,37 @@ regressEachWeekCol <- function(df, sR){   # sR stands for stateOrRegion
 }
 
 ```
-## Run "within" regressions
+## Run state-by-state regressions
 ``` {r eval=FALSE}
 
 lmOut_stateOrRegion <- list()
-for (sR in stateOrRegions_only) {
-  lmOut_stateOrRegion[[sR]] <- ronaPer1000_byStateOrRegion %>% 
+for (sR in stateOrRegions_only[! stateOrRegions_only %in% c("HI", "AK")]) {
+  lmOut_stateOrRegion[[sR]] <- ronaPer1000_withStateOrRegion %>% 
     filter(stateOrRegion == sR) %>%
     regressEachWeekCol(sR)
 }
-
-# EXPORT TO .RData
-myVec <- ls()[!ls() %in% c("lmOut_stateOrRegion",
-                           "weekDates",
-                           "stateOrRegions_only",
-                           "ronaPer1000_byStateOrRegion")]
-rm(list = myVec)
-
-```
-## Plot "within" regressions
-```{r warning=FALSE, fig.height=8}
-
-load("./temp_workspace/lmOut_stateOrRegion.RData")
 
 lmOut_betaCoeffs <- bind_rows(lmOut_stateOrRegion, .id = "column_label") %>%
   inner_join(weekDates, by = "week_DateT") %>%
   mutate(ronaVoteTrend = ifelse(pVal_coeff < .05 & coeff > 0, "Republican", 
                        ifelse(pVal_coeff < .05 & coeff < 0, "Democrat", NA))
          ) 
+
+# EXPORT TO lmOut_stateOrRegion.RData
+myVec <- ls()[!ls() %in% c("lmOut_betaCoeffs",
+                           "weekDates",
+                           "stateOrRegions_only",
+                           "ronaPer1000_withStateOrRegion")]
+rm(list = myVec)
+rm(myVec)
+# SAVE TO lmOut_stateByState.RData
+```
+
+## Plot state-by-state regressions
+```{r warning=FALSE, fig.height=8}
+
+# ADD THE BETWEEN REGRESSIONS TO THIS CHART
+load("./temp_workspace/lmOut_stateByState.RData")
 
 lmOut_betaCoeffs %>%
   ggplot(aes(x=weekDate, y=stateRegion, color=ronaVoteTrend)) +
@@ -234,66 +241,115 @@ lmOut_betaCoeffs %>%
        subtitle="Significant correlations highlighted and color-coded by sign.",
        caption=paste("State/Regions on weeks where (β>0) & (β=0 with p<0.05) have a red dot.\n",
                      "(β<0) & (β=0 with p<0.05) have a blue dot.\n",
-                     "When (p>0.5), then no dot is plotted.")) +
+                     "When (p>0.5), then no dot is plotted."),
+                     x="Date", y="StateOrRegion") +
   dark_theme_gray()
    
 ```
 
-## Run and plot "between" regression
+## Run and plot coefficients from separate "between" (group-only) 
 ```{r}
-rm(lmOut_betaCoeffs, lmOut_stateOrRegion, myVec, fips_stateOrRegion, plot_byState, plot_byStateOrRegion, ronaPer1000)
+rm(list=ls())
+load("./temp_workspace/rona.RData")
+load("./temp_workspace/fips_stateOrRegion.RData")
+load("./temp_workspace/regressEachWeekCol_function.RData")
 
-x <- ronaPer1000_byStateOrRegion %>% 
+statesBetweenData <- ronaSectionsTot %>%
+  left_join(fips_stateOrRegion) %>%
+  filter(! state %in% c("AK", "HI")) %>%
   group_by(stateOrRegion) %>%
-  summarize(DJT_Margin = weighted.mean(DJT_Margin, (REPUBLICAN+DEMOCRAT)),
+  summarize(REPUBLICAN = sum(REPUBLICAN),
+            DEMOCRAT = sum(DEMOCRAT),
+            DJT_Margin = (REPUBLICAN - DEMOCRAT) / (REPUBLICAN + DEMOCRAT),
             countyCounts_sR = n(),
-            across(starts_with("T", ignore.case=FALSE), ~ weighted.mean(., pop2019)),
             pop2019 = sum(pop2019),
+            across(starts_with("T", ignore.case=FALSE), ~ sum(.)*1000/pop2019)
             )
 
-xx <- regressEachWeekCol(x, 1) %>% inner_join(weekDates)
+betweenRegression_timeSeries <- regressEachWeekCol(statesBetweenData, 1) %>% 
+  inner_join(weekDates)
+  
+ggplot(betweenRegression_timeSeries, aes(y=coeff, x=weekDate)) +
+  geom_point() +
+  labs(title='"Between" Regression Coefficients Time Series', 
+       subtitle="subtitle", 
+       caption="caption",
+       x="Date",
+       y="Coefficient ") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "white", size = .5) +
+  geom_point(aes(color=coeff)) +
+  scale_colour_gradient(low="#0000ff", high="#ff0000", guide=FALSE) + 
+  dark_theme_gray()
 
-ggplot(xx, aes(y=coeff, x=weekDate)) +geom_point()
 
 ```
+## Run and plot "within" (FE) regression betaCoeff as time series.
 
+``` {r}
+load("./temp_workspace/lmOut_stateByState.RData")
 
+lmOutWithin_raw <- ronaPer1000_withStateOrRegion %>% {
+  map(select(., starts_with("T", ignore.case=FALSE)), 
+      function(cas_per_1000) {
+        lm(cas_per_1000 ~ DJT_Margin + as.factor(stateOrRegion), data=., weights = pop2019)
+        })
+}
 
-```{r eval=FALSE}
+lmOutWithin_statsList <- map(lmOutWithin_raw, 
+             function(an_lm) {
+                 c( 
+                    coeff = tidy(an_lm)$estimate[2], 
+                    y_intercept = tidy(an_lm)$estimate[1], 
+                    pVal_coeff = tidy(an_lm)$p.value[2], 
+                    pVal_intercept = tidy(an_lm)$p.value[1], 
+                    r2 = glance(an_lm)$r.squared
+                 )})
 
-# Join additional columns for analysis
-timeSeriesResults <- lm_dfT %>% 
+withinRegression_timeSeries <- as.data.frame(do.call(rbind, lmOutWithin_statsList)) %>%
   rownames_to_column(var = "week_DateT") %>%
-  left_join(weekDates, by = "week_DateT") %>%
-  column_to_rownames("week_DateT") %>%
-  filter(weekDate > as.Date("2020-04-12"))
+  inner_join(weekDates)
 
-# Reorder columns
-timeSeriesResults <- 
-  timeSeriesResults[c("BetaCoeff", "RSquared", "PValue", "weekDate")]
-
-rm(lm_outT, lm_dfT) # lm_allT, 
-
+ggplot(withinRegression_timeSeries, aes(y=coeff, x=weekDate)) +
+  geom_point() +
+  labs(title='"Within" Regression Coefficients Time Series', 
+       subtitle="subtitle", 
+       caption="caption",
+       x="Date",
+       y="Coefficient ") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "white", size = .5) +
+  geom_point(aes(color=coeff)) +
+  scale_colour_gradient(low="#0000ff", high="#ff0000", guide=FALSE) + 
+  dark_theme_gray()
 
 ```
 
+```{r}
+a <- betweenRegression_timeSeries %>%
+  select(coeff, weekDate) %>%
+  mutate(regression = "between")
 
-```{r eval=FALSE}
-ts_title <- "title"
-ts_subtitle <- "subtitle"
-ts_caption <- "caption"
+b <- withinRegression_timeSeries %>%
+  select(coeff, weekDate) %>%
+  mutate(regression = "within")
 
-ts_plot <- timeSeriesResults %>% 
-    ggplot(aes(x=weekDate, 
-               y=BetaCoeff)) +
-        labs(title=ts_title, subtitle=ts_subtitle, caption=ts_caption) +
-        xlab("Date") + ylab("Regression Coefficient") +
-        scale_y_continuous(limits=c(-10, 20)) +
-        geom_hline(yintercept = 0, linetype = "solid", color = "white", size = .5) +
-        geom_point(aes(color=BetaCoeff)) +
-        scale_colour_gradient(low="#0000ff", high="#ff0000", guide=FALSE)
+within_between_timeSeries <- rbind(a, b) 
 
-ts_plot + dark_theme_gray()
+g <- ggplot(within_between_timeSeries, 
+       aes(y=coeff, 
+           x=weekDate, 
+           color=coeff, 
+           linetype=factor(regression))) +
+  geom_point() +
+  scale_colour_gradient(low="#0000ff", high="#ff0000", guide=FALSE) + 
+  labs(title='"Within" and "Between" Regression Coefficients', 
+       subtitle="Covid Cases Per 100,000 Population Per .01 Vote Margin", 
+       caption="caption",
+       x="Date",
+       y="Coefficient ") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "white", size = .5) +
+  dark_theme_gray() +
+  geom_dl(aes(label = regression), method = list(dl.combine("first.points", "last.points"), dl.trans(x=x-3, y=y-.5), dl.move("within", hjust=0, vjust=-2.7)), cex = 0) 
 
+g
 
 ```
