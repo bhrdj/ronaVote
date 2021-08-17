@@ -85,13 +85,13 @@ library(stats)        # for weighted.mean()
 library(ggiraph)      # for tooltip highlighting
 library(directlabels) # for plot labeling, on within between graph
 
-rm(list=ls())
-load("./temp_workspace/rona.RData")
-rm(ronaSectionsTot)
+# rm(list=ls())
+# load("./temp_workspace/rona.RData")
+# rm(ronaSectionsTot)
 
 ```
 
-## Do the states have enough counties to run "within" regressions?
+#### Do the states have enough counties to run "within" regressions?
 
 ```{r warning=FALSE , message=FALSE}
 # group_by states
@@ -113,15 +113,16 @@ plot_byState <-
   geom_point_interactive(aes(tooltip = state), alpha=0.5) +
   dark_theme_gray()
 
-rm(summaries_ByState)
+# rm(summaries_ByState)
 
 girafe(code = print(plot_byState), width_svg = 8, height_svg = 4)
 
 ```
 
-Most states have enough counties, but some have too few. I will combine states with fewer than 25 counties with other contiguous states into a few "regions".
+#### Most states have enough counties, but some have too few. 
+- I will combine states with fewer than 25 counties with other contiguous states into a few "regions".
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 fips_stateOrRegion <- ronaPer1000 %>%
   mutate(newEngland = state %in% c("NH", "VT", "RI", "MA", "ME", "CT")) %>%
@@ -159,24 +160,22 @@ plot_byStateOrRegion <-
   geom_point_interactive(aes(tooltip = stateOrRegion), alpha=0.5) +
   dark_theme_gray()
 
-rm(summaries_ByStateOrRegion)
+# rm(summaries_ByStateOrRegion)
 
 girafe(code = print(plot_byStateOrRegion), width_svg = 8, height_svg = 4)
 ```
 
-## Setup "within" and "between" regressions
-```{r eval=TRUE}
+#### Setup "within" and "between" regressions
+```{r eval=TRUE, warning=FALSE, message=FALSE}
 ronaPer1000_withStateOrRegion <- ronaPer1000 %>%
   left_join(fips_stateOrRegion, by="fips") %>%
   arrange(desc(stateOrRegion)) %>%
   filter(! state %in% c("AK", "HI")) %>%
   select(-c(state))
 
-
-
 ```
-## Function for "within" regressions
-```{r}
+#### Declare a Function for "within" regressions
+```{r warning=FALSE, message=FALSE}
 regressEachWeekCol <- function(df, sR){   # sR stands for stateOrRegion
   lmOut_raw <- map(select(df, starts_with("T", ignore.case=FALSE)), 
               function(cas_per_1000) {
@@ -201,8 +200,9 @@ regressEachWeekCol <- function(df, sR){   # sR stands for stateOrRegion
 }
 
 ```
-## Run state-by-state regressions
-``` {r eval=FALSE}
+
+#### Run state-by-state regressions
+``` {r eval=FALSE, warning=FALSE, message=FALSE}
 
 lmOut_stateOrRegion <- list()
 for (sR in stateOrRegions_only[! stateOrRegions_only %in% c("HI", "AK")]) {
@@ -218,41 +218,42 @@ lmOut_betaCoeffs <- bind_rows(lmOut_stateOrRegion, .id = "column_label") %>%
          ) 
 
 # EXPORT TO lmOut_stateOrRegion.RData
-myVec <- ls()[!ls() %in% c("lmOut_betaCoeffs",
-                           "weekDates",
-                           "stateOrRegions_only",
-                           "ronaPer1000_withStateOrRegion")]
-rm(list = myVec)
-rm(myVec)
+# myVec <- ls()[!ls() %in% c("lmOut_betaCoeffs",
+#                            "weekDates",
+#                            "stateOrRegions_only",
+#                            "ronaPer1000_withStateOrRegion")]
+# rm(list = myVec)
+# rm(myVec)
 # SAVE TO lmOut_stateByState.RData
 ```
 
-## Plot state-by-state regressions
-```{r warning=FALSE, fig.height=8}
+#### Plot state-by-state regressions
+```{r warning=FALSE, message=FALSE, fig.height=8}
 
 # ADD THE BETWEEN REGRESSIONS TO THIS CHART
-load("./temp_workspace/lmOut_stateByState.RData")
+# load("./temp_workspace/lmOut_stateByState.RData")
 
 lmOut_betaCoeffs %>%
   ggplot(aes(x=weekDate, y=stateRegion, color=ronaVoteTrend)) +
-  geom_point(size = 0.7) +
-  scale_colour_manual(values = c(Republican = "#BB3333", Democrat = "#3333BB")) + 
+  geom_point(size = 0.8) +
+  scale_colour_manual(values = c(Republican = "#DD2222", Democrat = "#2222DD")) + 
   labs(title="Individual StateOrRegion Regression Coefficients Over Time",
        subtitle="Significant correlations highlighted and color-coded by sign.",
-       caption=paste("State/Regions on weeks where (β>0) & (β=0 with p<0.05) have a red dot.\n",
-                     "(β<0) & (β=0 with p<0.05) have a blue dot.\n",
-                     "When (p>0.5), then no dot is plotted."),
+       caption=paste("State/Regions on weeks where (β>0) & (β=0 unlikely with p<0.05) have a red dot.\n",
+                     "(β<0) & (β=0 unlikely with p<0.05) have a blue dot.\n",
+                     "When (p>.05), then no dot is plotted."),
                      x="Date", y="StateOrRegion") +
   dark_theme_gray()
    
 ```
 
-## Run and plot coefficients from separate "between" (group-only) 
-```{r}
-rm(list=ls())
-load("./temp_workspace/rona.RData")
-load("./temp_workspace/fips_stateOrRegion.RData")
-load("./temp_workspace/regressEachWeekCol_function.RData")
+#### Run and plot coefficients "between" regression.  
+- (Regression on stateOrRegions instead of on counties.)
+```{r warning=FALSE, message=FALSE, fig.show='hide'}
+# rm(list=ls())
+# load("./temp_workspace/rona.RData")
+# load("./temp_workspace/fips_stateOrRegion.RData")
+# load("./temp_workspace/regressEachWeekCol_function.RData")
 
 statesBetweenData <- ronaSectionsTot %>%
   left_join(fips_stateOrRegion) %>%
@@ -283,9 +284,10 @@ ggplot(betweenRegression_timeSeries, aes(y=coeff, x=weekDate)) +
 
 
 ```
-## Run and plot "within" (FE) regression betaCoeff as time series.
+#### Run and plot "within" (FE) regression coefficient as time series.
+- (Inserting fixed-effect control regressors for each state or region, discarding the state/region effect coefficients.)
 
-``` {r}
+``` {r warning=FALSE, message=FALSE}
 load("./temp_workspace/lmOut_stateByState.RData")
 
 lmOutWithin_raw <- ronaPer1000_withStateOrRegion %>% {
@@ -323,7 +325,10 @@ ggplot(withinRegression_timeSeries, aes(y=coeff, x=weekDate)) +
 
 ```
 
-```{r}
+#### Combining the "between" and "within" coefficient plots
+-  We see that the state-to-state ronaVote trend is higher-magnitude than the trend among counties within states.
+-  But there is broad similarity in the trend and timing.
+```{r, warning=FALSE, message=FALSE}
 a <- betweenRegression_timeSeries %>%
   select(coeff, weekDate) %>%
   mutate(regression = "between")

@@ -97,34 +97,29 @@ In Spring and Summer of 2020, predominantly Democratic-voting counties suffered 
 <div class="center_plots">
 #### Time Series Plots
 <br>
+<img  src="./png/cumulative_2021-08-15.png">
+<br>
+</div>
+
+<div class="center_plots">
+<br>
 <img  src="./png/weighted_2021-08-09.png">
 <br>
 </div>
 
 <div class="center_plots">
 <br>
-<img  src="./png/cumulative_2021-08-15.png">
-<br>
-</div>
-
-<div class="width_auto">
-<br><hr> 
-</div>
-
-
-<div class="center_plots">
-#### Within-State and Between-State Coefficient Significance Over Time
-<br>
-<img  src="./png/within_2021-08-15.png">
+<img  src="./png/withinBetween_2021-08-16.png">
 <br>
 </div>
 
 <div class="center_plots">
-#### Time Series Plot of Cumulative COVID Per 1000 Population
 <br>
-<img  src="./png/within_2021-08-15.png">
+<img  src="./png/stateByState_2021-08-16.png">
 <br>
 </div>
+
+
 
 
 
@@ -176,7 +171,7 @@ library(stats)         # for weighted.mean()
 # pathVote <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/vote/Harvard/countypres_2000-2020.csv"
 # pathPop <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/countyData/USDA_PopulationData/PopEst2019.csv"
 
-pathRona <- "./data/rona/NYT/us-counties_2021-08-09.csv"
+pathRona <- "./data/rona/NYT/us-counties_2021-08-16.csv"
 pathVote <- "./data/vote/Harvard/countypres_2000-2020.csv"
 pathPop <- "./data/countyData/USDA_PopulationData/PopEst2019.csv"
 
@@ -382,7 +377,7 @@ ts_caption = paste(
   "an increase of +10 COVID cases per 100,000 population.")
 
 # CROSS-SECTION SCATTER PLOTS WITH REGRESSION
-xs_dates = c("T2020_08_09", "T2020_11_01", "T2021_08_08")
+xs_dates = c("T2020_08_09", "T2020_11_01", "T2021_08_15")
 xs_title = "Scatter-plot and Trend on " # add date here 
 xs_subtitle = "(Population-Weighted Regression of Cumulative Covid Cases-Per-100,000 on Vote-margin)"
 
@@ -391,7 +386,7 @@ xs_subtitle = "(Population-Weighted Regression of Cumulative Covid Cases-Per-100
 <hr> #### Plot Cross-Section Scatterplot and Regression Line
 ```{r fig.align='center', warning=FALSE, message=FALSE, fig.show='hide'}
 weekDates_ <- column_to_rownames(weekDates, var="week_DateT")
-i <- 2
+i <- 3
   chart_date <- xs_dates[[i]]
   lm_fit <- lm_allT[[{chart_date}]]
   predicted_df <- data.frame(
