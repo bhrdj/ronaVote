@@ -6,8 +6,6 @@ author: "Steven Bhardwaj"
 date: "Posted 2021-08-13, Updated 2021-08-13"
 output: 
   html_document:
-    toc: true
-    toc_depth: 3
     theme:
       bootswatch: darkly
     code_folding: hide
@@ -75,7 +73,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Summary
 This is a literate-code walkthrough of the data exploration process, leaving the resulting charts at the end.
 
-#### Libraries and Startup
+<hr> #### Libraries and Startup
 ```{r warning=FALSE , message=FALSE}
 library(tidyverse)
 library(broom)
@@ -85,13 +83,12 @@ library(stats)        # for weighted.mean()
 library(ggiraph)      # for tooltip highlighting
 library(directlabels) # for plot labeling, on within between graph
 
-# rm(list=ls())
-# load("./temp_workspace/rona.RData")
-# rm(ronaSectionsTot)
+rm(list=ls())
+load("./temp_workspace/rona.RData")
 
 ```
 
-#### Do the states have enough counties to run "within" regressions?
+<hr> #### Do the states have enough counties to run "within" regressions?
 
 ```{r warning=FALSE , message=FALSE}
 # group_by states
@@ -115,11 +112,12 @@ plot_byState <-
 
 # rm(summaries_ByState)
 
-girafe(code = print(plot_byState), width_svg = 8, height_svg = 4)
+girafe(code = print(plot_byState), width_svg = 6, height_svg = 4,
+       options = list(opts_sizing(width = .75)))
 
 ```
 
-#### Most states have enough counties, but some have too few. 
+<hr> #### Most states have enough counties, but some have too few. 
 - I will combine states with fewer than 25 counties with other contiguous states into a few "regions".
 
 ```{r warning=FALSE, message=FALSE}
@@ -162,10 +160,11 @@ plot_byStateOrRegion <-
 
 # rm(summaries_ByStateOrRegion)
 
-girafe(code = print(plot_byStateOrRegion), width_svg = 8, height_svg = 4)
+girafe(code = print(plot_byStateOrRegion), width_svg = 8, height_svg = 4,
+        options = list(opts_sizing(width = .75)))
 ```
 
-#### Setup "within" and "between" regressions
+<hr> #### Setup data for "within" and "between" regressions
 ```{r eval=TRUE, warning=FALSE, message=FALSE}
 ronaPer1000_withStateOrRegion <- ronaPer1000 %>%
   left_join(fips_stateOrRegion, by="fips") %>%
@@ -174,7 +173,7 @@ ronaPer1000_withStateOrRegion <- ronaPer1000 %>%
   select(-c(state))
 
 ```
-#### Declare a Function for "within" regressions
+<hr> #### Declare a Function for time-series regressions
 ```{r warning=FALSE, message=FALSE}
 regressEachWeekCol <- function(df, sR){   # sR stands for stateOrRegion
   lmOut_raw <- map(select(df, starts_with("T", ignore.case=FALSE)), 
@@ -201,7 +200,7 @@ regressEachWeekCol <- function(df, sR){   # sR stands for stateOrRegion
 
 ```
 
-#### Run state-by-state regressions
+<hr> #### Run state-by-state regressions
 ``` {r eval=FALSE, warning=FALSE, message=FALSE}
 
 lmOut_stateOrRegion <- list()
@@ -217,18 +216,14 @@ lmOut_betaCoeffs <- bind_rows(lmOut_stateOrRegion, .id = "column_label") %>%
                        ifelse(pVal_coeff < .05 & coeff < 0, "Democrat", NA))
          ) 
 
-# EXPORT TO lmOut_stateOrRegion.RData
-# myVec <- ls()[!ls() %in% c("lmOut_betaCoeffs",
-#                            "weekDates",
-#                            "stateOrRegions_only",
-#                            "ronaPer1000_withStateOrRegion")]
-# rm(list = myVec)
-# rm(myVec)
+
 # SAVE TO lmOut_stateByState.RData
 ```
 
-#### Plot state-by-state regressions
-```{r warning=FALSE, message=FALSE, fig.height=8}
+<hr> #### Plot state-by-state regressions
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.align='center'}
+
+load("./temp_workspace/lmOut_stateByState.RData")
 
 # ADD THE BETWEEN REGRESSIONS TO THIS CHART
 # load("./temp_workspace/lmOut_stateByState.RData")
@@ -247,13 +242,12 @@ lmOut_betaCoeffs %>%
    
 ```
 
-#### Run and plot coefficients "between" regression.  
+<hr> #### Run and plot coefficients "between" regression.  
 - (Regression on stateOrRegions instead of on counties.)
-```{r warning=FALSE, message=FALSE, fig.show='hide'}
+```{r warning=FALSE, message=FALSE, fig.align='center'}
 # rm(list=ls())
-# load("./temp_workspace/rona.RData")
-# load("./temp_workspace/fips_stateOrRegion.RData")
-# load("./temp_workspace/regressEachWeekCol_function.RData")
+load("./temp_workspace/rona.RData")
+load("./temp_workspace/fips_stateOrRegion.RData")
 
 statesBetweenData <- ronaSectionsTot %>%
   left_join(fips_stateOrRegion) %>%
@@ -284,10 +278,10 @@ ggplot(betweenRegression_timeSeries, aes(y=coeff, x=weekDate)) +
 
 
 ```
-#### Run and plot "within" (FE) regression coefficient as time series.
+<hr> #### Run and plot "within" (FE) regression coefficient as time series.
 - (Inserting fixed-effect control regressors for each state or region, discarding the state/region effect coefficients.)
 
-``` {r warning=FALSE, message=FALSE}
+``` {r warning=FALSE, message=FALSE, fig.align='center'}
 load("./temp_workspace/lmOut_stateByState.RData")
 
 lmOutWithin_raw <- ronaPer1000_withStateOrRegion %>% {
@@ -325,10 +319,10 @@ ggplot(withinRegression_timeSeries, aes(y=coeff, x=weekDate)) +
 
 ```
 
-#### Combining the "between" and "within" coefficient plots
+<hr> #### Combining the "between" and "within" coefficient plots
 -  We see that the state-to-state ronaVote trend is higher-magnitude than the trend among counties within states.
 -  But there is broad similarity in the trend and timing.
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
 a <- betweenRegression_timeSeries %>%
   select(coeff, weekDate) %>%
   mutate(regression = "between")
@@ -358,3 +352,14 @@ g <- ggplot(within_between_timeSeries,
 g
 
 ```
+
+
+
+
+<!-- # EXPORT TO lmOut_stateOrRegion.RData -->
+<!-- # myVec <- ls()[!ls() %in% c("lmOut_betaCoeffs", -->
+<!-- #                            "weekDates", -->
+<!-- #                            "stateOrRegions_only", -->
+<!-- #                            "ronaPer1000_withStateOrRegion")] -->
+<!-- # rm(list = myVec) -->
+<!-- # rm(myVec) -->

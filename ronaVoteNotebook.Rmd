@@ -308,7 +308,7 @@ ronaPer1000 <- ronaSectionsTot %>%
 # Remove unused variables
 rm(rawData) #, ronaTall, ronaSectionsTot)
 
-# For exporting .RData:
+# For exporting rona.RData:
 myVec <- ls()[!ls() %in% c("ronaPer1000", "ronaSectionsTot", "weekDates")]
 rm(list = myVec)
 
@@ -458,13 +458,11 @@ rownames(maxMinTable) <-
     "Near-zero Coeff",
     "Peak Rep. Coeff",
     "Current Status")
-maxMinTable
+
 ```
 
-<hr> ## Appendix: Within States and Between States Analysis
-
-(forthcoming)
-
+<hr> #### "Within", "Between", and State-by-State Analysis
+- link to [calculations](./ronaVote_appendix_within.html)
 
 <hr>
 ## References
@@ -485,45 +483,32 @@ This correlation [has](https://www.nytimes.com/interactive/2021/04/17/us/vaccine
 <hr>
 ## Additional Analysis
 #### TODO
- * Plot similar graphs for within-states and between-states coefficients over time.
- * Redo entire code using group_by instead of pivot_wider
- * timeSeriesResults is haphazardly left in there
- * Plot cases per 100,000 (cumulative and weekly-average-daily-rate) vertically-integrated
- * Get updated 2020 census data
- * Make a table of OLS / WLS figures
- 
+ * Color-code more
+    - xs regression lines blue and white for dem and no-trend
+    - dots gray on time-series plots when p>.05
+ * Put captions on between/within plots with regression model
+ * More discussion of between/within and state-by-state plot interpretations
+ * Redo entire code leaving data in tall format instead of wide.
+    - For clarity and conciseness.
+    - I can view data in wide format, but return code to tall format only for the workflow.
+    - Include the between-within into the main program
+ * Get updated 2020 census data.
+ * Make a big table of OLS / WLS / Within / Between coefficients at the three key-points.
+ * Put the whole thing on Linode and make it automatically update itself with the latest COVID data.
+
 #### DONE
- * Weighted regression DONE
- * Redo analysis using per-100,000 statistics instead of per-capita DONE
- * Bubble chart of cross sections at the four points with trendline DONE
- * Put magnitude of effect in context of aggregate figures DONE
+ * Plot cases per 100,000 (cumulative and weekly-average-daily-rate) (2021-08-16)
+ * Plot similar graphs for within-states and between-states coefficients over time. (2021-08-16)
+ * Weighted regression (2021-08-15)
+ * Redo analysis using per-100,000 statistics instead of per-capita (2021-08-08)
+ * Bubble chart of cross sections at the four points with trendline (2021-08-08)
+ * Put magnitude of effect in context of aggregate figures (2021-08-08)
 
 <!--
 # if .005 of voters switch their vote, that's a +.01 margin
 # +.01 margin corresponds to a total of 155,146,377 * .005 = 775,732 votes
 # +.0001 cases per population corresponds to 322,793,363 * +.0001 = 32,279 cases
 # 775,732 votes divided by 32,279 cases equals a marginal rate of about 25 votes per case
-
-
-# CODE AND INFO FOR LATER
-
-# library(shiny)
-# library(bslib)
-# library(thematic)
-
-# pathRona <- "./data/rona/NYT/us-counties_panel_2021-08-02.csv"
-# pathVote <- "./data/vote/Harvard/countypres_2000-2020.csv"
-# pathPop <- "./data/countyData/USDA_PopulationData/PopEst2019.csv"
-
-# pathRona <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
-# pathVote <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/vote/Harvard/countypres_2000-2020.csv"
-# pathPop <- "https://raw.githubusercontent.com/bhrdj/ronaVote/main/data/countyData/USDA_PopulationData/PopEst2019.csv"
-
-# library(rsconnect)
-# rsconnect::deployApp('~/git/RmdSandbox/')
-# https://bhrdj.shinyapps.io/rmdsandbox/
-
-# https://www.shinyapps.io/admin/#/dashboard
 
 # RUN THESE TO CLEAR LOCAL DATA BUILDING UP IN R WORKSPACE
 # rm(list = ls())
