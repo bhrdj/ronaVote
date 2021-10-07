@@ -9,6 +9,15 @@
 
 ---
 
+## Methodology
+
+### Calculations done with R Markdown:
+- All processing code displayed in R Markdown code chunks.
+  - Code processing begins with raw data as-downloaded.
+  - No manual data cleaning.
+
+---
+
 ## Data Sources
 
 ### Chart **raw correlation** over time between:
@@ -22,11 +31,3 @@
   - USDA Population estimates for the U.S., States, and counties, 2010-19. 
   - https://www.ers.usda.gov/data-products/county-level-data-sets/download-data.aspx
 
----
-
-## Methodology
-
-### Calculations done with R Markdown:
-- All processing code displayed in R Markdown code chunks.
-  - Code processing begins with raw data as-downloaded.
-  - No manual data cleaning.
