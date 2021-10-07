@@ -1,7 +1,7 @@
 # ronaVote
 
-Link to webpage presentation of R Markdown Notebook:
-https://bhrdwj.net/r/ronaVoteNotebook.html
+### Link to webpage presentation of R Markdown Notebook:
+- https://bhrdwj.net/r/ronaVoteNotebook.html
 
 ### Chart **raw correlation** over time between:
 - County-level COVID outcomes
