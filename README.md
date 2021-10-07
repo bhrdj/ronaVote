@@ -9,7 +9,7 @@
 ---
 
 ## Link to webpage presentation of R Markdown Notebook:
-### https://bhrdwj.net/r/ronaVoteNotebook.html
+- https://bhrdwj.net/r/ronaVoteNotebook.html
 
 ---
 
