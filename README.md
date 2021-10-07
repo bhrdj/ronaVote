@@ -1,6 +1,9 @@
 # ronaVote
 
 “How do cumulative COVID cases correlate with 2020 USA presidential vote-margins?”
+- Chart **raw correlation** over time between:
+  - County-level per-capita COVID outcomes
+  - County-level 2020 Presidential electoral margins
 
 ---
 
@@ -20,7 +23,6 @@
 
 ## Data Sources
 
-### Chart **raw correlation** over time between:
 - County-level COVID outcomes
   - New York Times, "Coronavirus (Covid-19) Data in the United States"
   - https://github.com/nytimes/covid-19-data/blob/master/live/us-counties.csv
