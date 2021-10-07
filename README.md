@@ -1,6 +1,7 @@
 # ronaVote
 
-“How do cumulative COVID cases correlate with 2020 USA presidential vote-margins?”
+### “How do cumulative COVID cases correlate with 2020 USA presidential vote-margins?”
+
 - Chart **raw correlation** over time between:
   - County-level per-capita COVID outcomes
   - County-level 2020 Presidential electoral margins
