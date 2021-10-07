@@ -1,7 +1,11 @@
 # ronaVote
 
-### Link to webpage presentation of R Markdown Notebook:
+## Link to webpage presentation of R Markdown Notebook:
 - https://bhrdwj.net/r/ronaVoteNotebook.html
+
+---
+
+## Data Sources
 
 ### Chart **raw correlation** over time between:
 - County-level COVID outcomes
@@ -13,6 +17,10 @@
 - Population data from USDA
   - USDA Population estimates for the U.S., States, and counties, 2010-19. 
   - https://www.ers.usda.gov/data-products/county-level-data-sets/download-data.aspx
+
+---
+
+## Methodology
 
 ### Calculations done with R Markdown:
 - All processing code displayed in R Markdown code chunks.
